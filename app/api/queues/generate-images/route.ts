@@ -94,7 +94,10 @@ export async function runImageJob(postId: string) {
     const record = await findPost(postId);
     if (!record || record.status === "complete") return;
     const attempt = record.imageAttempts + 1;
-    await getDb().update(posts).set({ imageAttempts: attempt }).where(eq(posts.id, postId));
+    await getDb().update(posts).set({
+      imageAttempts: attempt,
+      imageNextAttemptAt: new Date(Date.now() + 6 * 60 * 1_000),
+    }).where(eq(posts.id, postId));
     await processPostImages(postId);
     console.info("[humblebrag:image-queue] completed", { postId, attempt });
   } catch (cause) {
