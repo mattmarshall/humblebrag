@@ -55,9 +55,13 @@ export function mediaUrl(postId: string, slot: ImageSlot) {
 }
 
 /**
- * Presign a single-object PUT. Signing ContentType binds the URL to JPEG: the
- * worker must send exactly this header, so the URL cannot be repurposed to
- * upload something else to the key.
+ * Presign a single-object PUT, locked to one key and to image/jpeg.
+ *
+ * signableHeaders is load-bearing. Passing ContentType on the command alone does
+ * NOT constrain the upload — the presigner leaves content-type out of
+ * X-Amz-SignedHeaders, so the URL will happily accept text/html and CloudFront
+ * will then serve that key as HTML. Forcing content-type into the signature
+ * makes any other value fail with SignatureDoesNotMatch.
  */
 export async function presignUpload(postId: string, slot: ImageSlot) {
   const command = new PutObjectCommand({
@@ -65,7 +69,10 @@ export async function presignUpload(postId: string, slot: ImageSlot) {
     Key: mediaKey(postId, slot),
     ContentType: "image/jpeg",
   });
-  return getSignedUrl(getClient(), command, { expiresIn: UPLOAD_TTL_SECONDS });
+  return getSignedUrl(getClient(), command, {
+    expiresIn: UPLOAD_TTL_SECONDS,
+    signableHeaders: new Set(["content-type", "host"]),
+  });
 }
 
 export function isMediaConfigured() {
