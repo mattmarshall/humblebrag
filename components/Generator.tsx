@@ -212,7 +212,7 @@ export function Generator({
         .flatMap((message) => [...message.parts].reverse())
         .find((part) =>
           part.type === "dynamic-tool" &&
-          part.toolName === "submit_humblebrag" &&
+          (part.toolName === "submit_workit" || part.toolName === "submit_influenzr") &&
           part.state === "output-available" &&
           !part.partial,
         );
