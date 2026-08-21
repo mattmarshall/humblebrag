@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -19,6 +19,14 @@ export const metadata: Metadata = {
     description: "Synthetic social achievement theater for the strategically humble.",
     images: [{ url: "/brand/readme-hero.png", width: 1600, height: 520, alt: "humblebrag" }],
   },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f3ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0f16" },
+  ],
 };
 
 export default function RootLayout({children}:{children:React.ReactNode}) {
