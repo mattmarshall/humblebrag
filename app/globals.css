@@ -59,3 +59,51 @@ button{color:inherit}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}.generationStage progress::-webkit-progress-value{transition:none}}
 @media(max-width:900px){.siteShell{padding:18px 14px 50px}.intro{grid-template-columns:1fr;padding:42px 2px 30px;gap:18px}.intro h1{font-size:58px}.intro p{font-size:16px}.generator{padding:14px;border-radius:20px}.generatorTopline{align-items:flex-start;flex-direction:column}.networkSwitch{width:100%}.networkSwitch button{flex:1}.generatorGrid{grid-template-columns:1fr}.promptPanel{position:static}.previewBody{padding:14px;min-height:500px}.previewPanel{min-height:550px}.workitActions b{display:none}.agentPulse{grid-template-columns:12px auto}.agentPulse small{grid-column:2;text-align:left}.generationStage{padding:20px}.generationStage h3{min-height:100px}.artifactGrid{grid-template-columns:1fr 1fr}}
 @media(max-width:540px){.siteNav .navAside{display:none}.intro h1{font-size:48px}.generatorTopline h2{font-size:25px}.networkSwitch small{display:none}.controlRow{grid-template-columns:1fr}.previewBody{padding:0;background:#fff}.previewPanel{border-radius:14px}.workitCard,.influenzrCard{border:0;border-radius:0}.generationStage{border-radius:0;min-height:600px}.workitStats{font-size:10px}.workitComments{display:none}.artifactGrid{grid-template-columns:1fr 1fr}.artifactCard span{min-height:auto}.igLocation{max-width:220px}}
+/* Humblebrag brand system -------------------------------------------------- */
+:root {
+  --hb-navy: #08245c;
+  --hb-periwinkle: #5b5fef;
+  --hb-gold: #f5ac16;
+  --hb-ink-muted: #69738c;
+  --hb-paper: #fbfaf7;
+}
+
+.brandLockup {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.7rem;
+}
+
+.brandMark {
+  display: block;
+  height: auto;
+  object-fit: contain;
+  width: 3.625rem;
+}
+
+.brandLockupCompact .brandMark { width: 2.625rem; }
+
+.brandType {
+  color: var(--hb-navy);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.brandType span:last-child { color: var(--hb-periwinkle); }
+
+.brand:hover .brandMark { transform: rotate(-2deg) scale(1.03); }
+.brandMark { transition: transform 180ms ease; }
+
+.siteNav {
+  border-bottom-color: color-mix(in srgb, var(--hb-navy) 12%, transparent);
+}
+
+.navAside {
+  color: var(--hb-ink-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+::selection { background: color-mix(in srgb, var(--hb-gold) 45%, white); color: var(--hb-navy); }

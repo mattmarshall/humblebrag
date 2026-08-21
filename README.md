@@ -1,6 +1,20 @@
-# humblebrag
+<p align="center">
+  <img src="./public/brand/readme-hero.png" alt="humblebrag — Bragging rights. Humbly." width="100%" />
+</p>
+
+<p align="center">
+  <strong>Professional and lifestyle self-importance, automated.</strong>
+</p>
 
 Synthetic social achievement theater: an embeddable Next.js + React generator backed by Vercel eve agents and AWS Bedrock.
+
+The identity pairs a self-satisfied gentleman mascot with deep navy, electric periwinkle, and a restrained flash of gold: witty and relatable, confident but not cocky, and unapologetically dev-friendly.
+
+## Brand assets
+
+- `public/brand/humblebrag-mark-512.png` — transparent, web-optimized mascot mark
+- `public/brand/readme-hero.png` — repository and social hero
+- `public/favicon.ico`, `public/icon.png`, and `public/apple-touch-icon.png` — browser and device icons
 
 ## Networks
 
