@@ -10,6 +10,7 @@ import {
   defaultInfluenzrBrag,
   type Humblebrag,
   type Network,
+  type RosterPerson,
 } from "./HumblebragCard";
 
 type ImageResponse = {
@@ -68,10 +69,28 @@ function strings(value: unknown, fallback: string[]) {
 function comments(value: unknown, fallback: Humblebrag["commentsPreview"]) {
   if (!Array.isArray(value)) return fallback;
   const result = value
-    .filter((v): v is { name?: unknown; text?: unknown } => Boolean(v && typeof v === "object"))
-    .map((v) => ({ name: String(v.name || "Supportive Mutual"), text: String(v.text || "So deserved.") }))
+    .filter((v): v is { personId?: unknown; text?: unknown } => Boolean(v && typeof v === "object"))
+    .map((v, index) => ({ personId: String(v.personId || `commenter-${index + 1}`), text: String(v.text || "So deserved.") }))
     .slice(0, 3);
   return result.length ? result : fallback;
+}
+
+function roster(value: unknown, fallback: RosterPerson[]) {
+  if (!Array.isArray(value)) return fallback;
+  const result = value
+    .filter((v): v is Record<string, unknown> => Boolean(v && typeof v === "object"))
+    .map((v, index): RosterPerson => ({
+      id: String(v.id || (index === 0 ? "author" : `commenter-${index}`)),
+      role: v.role === "author" ? "author" : "commenter",
+      name: String(v.name || "Supportive Mutual"),
+      handle: String(v.handle || `supportive.mutual.${index}`),
+      title: String(v.title || "Strategic Supporter"),
+      company: String(v.company || "Mutual Admiration Group"),
+      appearance: String(v.appearance || "Fictional adult with a natural, approachable profile-photo appearance."),
+      avatarPrompt: String(v.avatarPrompt || "Photorealistic profile portrait of a completely fictional adult, natural skin texture, no text, logo, watermark, celebrity, or public figure."),
+    }))
+    .slice(0, 4);
+  return result.length === 4 ? result : fallback;
 }
 
 function normalizeBrag(value: unknown, network: Network): Humblebrag | null {
@@ -89,6 +108,11 @@ function normalizeBrag(value: unknown, network: Network): Humblebrag | null {
     if (typeof v === "number" && Number.isFinite(v)) metrics[key] = Math.round(v);
   }
 
+  const normalizedRoster = roster(raw.roster, fallback.roster);
+  const authorId = typeof raw.authorId === "string" && normalizedRoster.some((person) => person.id === raw.authorId)
+    ? raw.authorId
+    : normalizedRoster.find((person) => person.role === "author")?.id || fallback.authorId;
+
   return {
     network,
     personaId: typeof raw.personaId === "string" ? raw.personaId : fallback.personaId,
@@ -103,6 +127,8 @@ function normalizeBrag(value: unknown, network: Network): Humblebrag | null {
     reactions: numeric(raw.reactions, fallback.reactions),
     comments: numeric(raw.comments, fallback.comments),
     reposts: numeric(raw.reposts, fallback.reposts),
+    authorId,
+    roster: normalizedRoster,
     commentsPreview: comments(raw.commentsPreview, fallback.commentsPreview),
     appearance: typeof raw.appearance === "string" ? raw.appearance : fallback.appearance,
     avatarPrompt,
@@ -153,9 +179,11 @@ export function Generator({
   const postId = useRef<string | undefined>(undefined);
 
   const requestImage = async (
-    kind: "avatar" | "post",
+    kind: "avatar" | "person" | "post",
     next: Humblebrag,
     referenceImageDataUrl?: string,
+    person?: RosterPerson,
+    seed = next.imageSeed,
   ) => {
     const response = await fetch("/api/images", {
       method: "POST",
@@ -163,9 +191,10 @@ export function Generator({
       body: JSON.stringify({
         kind,
         postId: postId.current,
+        personId: person?.id || (kind === "avatar" ? next.authorId : undefined),
         network: next.network,
-        prompt: kind === "avatar" ? next.avatarPrompt : next.postImagePrompt,
-        seed: next.imageSeed,
+        prompt: kind === "person" ? person?.avatarPrompt : kind === "avatar" ? next.avatarPrompt : next.postImagePrompt,
+        seed,
         referenceImageDataUrl,
       }),
     });
@@ -182,13 +211,27 @@ export function Generator({
       setPhase("avatar");
       setErrorStage("avatar");
       const avatar = await requestImage("avatar", next);
-      const withAvatar = { ...next, avatarUrl: avatar.url || avatar.dataUrl };
+      const avatarUrl = avatar.url || avatar.dataUrl;
+      const withAvatar = {
+        ...next,
+        avatarUrl,
+        roster: next.roster.map((person) => person.id === next.authorId ? { ...person, avatarUrl } : person),
+      };
       setDraftBrag(withAvatar);
 
       setPhase("scene");
       setErrorStage("scene");
-      const scene = await requestImage("post", withAvatar, avatar.dataUrl);
-      const finished = { ...withAvatar, postImageUrl: scene.url || scene.dataUrl };
+      const commenters = withAvatar.roster.filter((person) => person.role === "commenter");
+      const [scene, ...commenterAvatars] = await Promise.all([
+        requestImage("post", withAvatar, avatar.dataUrl),
+        ...commenters.map((person, index) => requestImage("person", withAvatar, undefined, person, Math.min(4_294_967_294, withAvatar.imageSeed + index + 1))),
+      ]);
+      const commenterUrls = new Map(commenters.map((person, index) => [person.id, commenterAvatars[index]?.url || commenterAvatars[index]?.dataUrl]));
+      const finished = {
+        ...withAvatar,
+        postImageUrl: scene.url || scene.dataUrl,
+        roster: withAvatar.roster.map((person) => commenterUrls.has(person.id) ? { ...person, avatarUrl: commenterUrls.get(person.id) } : person),
+      };
       setDraftBrag(finished);
 
       if (postId.current) {

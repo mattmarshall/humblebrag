@@ -2,6 +2,18 @@ import Image from "next/image";
 
 export type Network = "workit" | "influenzr";
 
+export type RosterPerson = {
+  id: string;
+  role: "author" | "commenter";
+  name: string;
+  handle: string;
+  title: string;
+  company: string;
+  appearance: string;
+  avatarPrompt: string;
+  avatarUrl?: string;
+};
+
 export type Humblebrag = {
   network: Network;
   personaId: string;
@@ -16,7 +28,9 @@ export type Humblebrag = {
   reactions: number;
   comments: number;
   reposts: number;
-  commentsPreview: { name: string; text: string }[];
+  authorId: string;
+  roster: RosterPerson[];
+  commentsPreview: { personId: string; text: string }[];
   appearance: string;
   avatarPrompt: string;
   postImagePrompt: string;
@@ -41,12 +55,19 @@ export const defaultBrag: Humblebrag = {
   comments: 612,
   reposts: 73,
   commentsPreview: [
-    { name: "Jenna Growthwell", text: "So deserved. This is leadership. 👏" },
-    { name: "Miles Excelton", text: "You continue to raise the bar while somehow staying grounded." },
-    { name: "Paige Momentum", text: "Huge. Congrats Brock!" },
+    { personId: "jenna-growthwell", text: "So deserved. This is leadership. 👏" },
+    { personId: "miles-excelton", text: "You continue to raise the bar while somehow staying grounded." },
+    { personId: "paige-momentum", text: "Huge. Congrats Brock!" },
   ],
   appearance: "Fictional man in his early 40s with short brown hair, rectangular glasses, navy blazer and pale blue shirt, earnest enterprise SaaS executive energy.",
   avatarPrompt: "Photorealistic professional profile portrait of a fictional man in his early 40s with short brown hair, rectangular glasses, navy blazer and pale blue shirt, warm neutral office background, natural corporate headshot, no text, no logo.",
+  authorId: "brock-synergson",
+  roster: [
+    { id: "brock-synergson", role: "author", name: "Brock Synergson", handle: "brock.synergson", title: "Chief Vision Alignment Officer", company: "Synergize Everything, Inc.", appearance: "Fictional man in his early 40s with short brown hair, rectangular glasses, navy blazer and pale blue shirt.", avatarPrompt: "Photorealistic professional profile portrait of a fictional man in his early 40s with short brown hair, rectangular glasses, navy blazer and pale blue shirt, no text or logo." },
+    { id: "jenna-growthwell", role: "commenter", name: "Jenna Growthwell", handle: "jenna.growthwell", title: "VP, People Momentum", company: "Northstar Loop", appearance: "Fictional woman in her late 30s with auburn bobbed hair, freckles, green blouse and charcoal blazer.", avatarPrompt: "Photorealistic professional headshot of a fictional woman in her late 30s with auburn bobbed hair, freckles, green blouse and charcoal blazer, no text or logo." },
+    { id: "miles-excelton", role: "commenter", name: "Miles Excelton", handle: "miles.excelton", title: "Operating Partner", company: "Summit Arc", appearance: "Fictional Black man in his mid 40s with close-cropped hair, salt-and-pepper beard and a grey knit polo.", avatarPrompt: "Photorealistic professional headshot of a fictional Black man in his mid 40s with close-cropped hair, salt-and-pepper beard and a grey knit polo, no text or logo." },
+    { id: "paige-momentum", role: "commenter", name: "Paige Momentum", handle: "paige.momentum", title: "Founder", company: "Forwardly", appearance: "Fictional East Asian woman in her early 30s with long black hair, round glasses and a cream jacket.", avatarPrompt: "Photorealistic professional headshot of a fictional East Asian woman in her early 30s with long black hair, round glasses and a cream jacket, no text or logo." },
+  ],
   postImagePrompt: "Photorealistic event photo of the same fictional man in his early 40s with short brown hair, rectangular glasses, navy blazer and pale blue shirt, speaking confidently on a tasteful corporate conference stage, flattering event lighting, no readable text or logos.",
   imageSeed: 1438197,
   metrics: { humilityIndex: 12, buzzwordsInserted: 11, authenticityRemovedPct: 83, phantomRecruitersAlerted: 47 },
@@ -67,12 +88,19 @@ export const defaultInfluenzrBrag: Humblebrag = {
   comments: 938,
   reposts: 204,
   commentsPreview: [
-    { name: "Mila Sunday", text: "the ENERGY in this photo 😭✨" },
-    { name: "Rowan Bloom", text: "you deserve every soft thing coming to you bb" },
-    { name: "Tess Daylight", text: "okay but drop the robe details immediately" },
+    { personId: "mila-sunday", text: "the ENERGY in this photo 😭✨" },
+    { personId: "rowan-bloom", text: "you deserve every soft thing coming to you bb" },
+    { personId: "tess-daylight", text: "okay but drop the robe details immediately" },
   ],
   appearance: "Fictional woman in her early 30s with shoulder-length dark blonde waves, warm olive skin, expressive brown eyes, minimal gold jewelry, cream linen shirt, polished-but-effortless wellness founder vibe.",
   avatarPrompt: "Photorealistic social profile portrait of a fictional woman in her early 30s with shoulder-length dark blonde waves, warm olive skin, expressive brown eyes, minimal gold jewelry and a cream linen shirt, soft window light, believable phone-camera portrait, no text or logo.",
+  authorId: "sage-marlowe",
+  roster: [
+    { id: "sage-marlowe", role: "author", name: "Sage Marlowe", handle: "sagemarlowe", title: "founder · creator · recovering overthinker", company: "Soft Signal Studio", appearance: "Fictional woman in her early 30s with shoulder-length dark blonde waves, warm olive skin and a cream linen shirt.", avatarPrompt: "Photorealistic social profile portrait of a fictional woman in her early 30s with shoulder-length dark blonde waves, warm olive skin and a cream linen shirt, no text or logo." },
+    { id: "mila-sunday", role: "commenter", name: "Mila Sunday", handle: "milasunday", title: "slow living creator", company: "Sunday Ritual", appearance: "Fictional South Asian woman in her late 20s with long wavy black hair, warm brown skin and a coral linen top.", avatarPrompt: "Photorealistic social-profile portrait of a fictional South Asian woman in her late 20s with long wavy black hair, warm brown skin and a coral linen top, no text or logo." },
+    { id: "rowan-bloom", role: "commenter", name: "Rowan Bloom", handle: "rowanbloom", title: "ceramicist · creator", company: "Bloom Form", appearance: "Fictional white nonbinary adult in their early 30s with short copper curls, blue eyes and an oatmeal sweater.", avatarPrompt: "Photorealistic social-profile portrait of a fictional white nonbinary adult in their early 30s with short copper curls, blue eyes and an oatmeal sweater, no text or logo." },
+    { id: "tess-daylight", role: "commenter", name: "Tess Daylight", handle: "tessdaylight", title: "travel creator", company: "Daylight Notes", appearance: "Fictional Black woman in her early 30s with shoulder-length locs, deep brown skin and a saffron silk blouse.", avatarPrompt: "Photorealistic social-profile portrait of a fictional Black woman in her early 30s with shoulder-length locs, deep brown skin and a saffron silk blouse, no text or logo." },
+  ],
   postImagePrompt: "Photorealistic lifestyle photo of the same fictional woman in her early 30s with shoulder-length dark blonde waves, warm olive skin, expressive brown eyes, minimal gold jewelry and cream linen clothing, relaxing at a tasteful boutique wellness hotel during golden hour, candid but curated, no readable text or logos.",
   imageSeed: 8827711,
   metrics: { mainCharacterEnergy: 94, aestheticSaturationPct: 89, casualnessSimulationPct: 97, brandCollabsManifested: 8 },
@@ -80,6 +108,15 @@ export const defaultInfluenzrBrag: Humblebrag = {
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).map((v) => v[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function personFor(brag: Humblebrag, personId: string) {
+  return brag.roster.find((person) => person.id === personId);
+}
+
+function PersonAvatar({ person, className = "miniAvatar" }: { person?: RosterPerson; className?: string }) {
+  if (person?.avatarUrl) return <Image className={className} src={person.avatarUrl} alt={`Fictional avatar for ${person.name}`} width={60} height={60} sizes="30px" />;
+  return <div className={className}>{initials(person?.name || "Supportive Mutual").slice(0, 1)}</div>;
 }
 
 function Avatar({ brag, compact = false }: { brag: Humblebrag; compact?: boolean }) {
@@ -131,10 +168,13 @@ export function WorkItCard({ brag }: { brag: Humblebrag }) {
     </div>
 
     <div className="workitComments">
-      {brag.commentsPreview.slice(0, 2).map((c, i) => <div className="workitComment" key={`${c.name}-${i}`}>
-        <div className="miniAvatar">{initials(c.name).slice(0, 1)}</div>
-        <div className="commentBubble"><b>{c.name}</b><small> · 2nd</small><p>{c.text}</p></div>
-      </div>)}
+      {brag.commentsPreview.slice(0, 2).map((c, i) => {
+        const person = personFor(brag, c.personId);
+        return <div className="workitComment" key={`${c.personId}-${i}`}>
+          <PersonAvatar person={person} />
+          <div className="commentBubble"><b>{person?.name || "Supportive Mutual"}</b><small> · 2nd</small><p>{c.text}</p></div>
+        </div>;
+      })}
     </div>
   </article>;
 }
@@ -175,7 +215,10 @@ export function InfluenzrCard({ brag }: { brag: Humblebrag }) {
       <p><strong>{handle}</strong> {brag.body}</p>
       <div className="igTags">{brag.hashtags.map((h) => `#${h}`).join(" ")}</div>
       <button className="igMuted" type="button">View all {brag.comments.toLocaleString()} comments</button>
-      {brag.commentsPreview.slice(0, 2).map((c, i) => <p className="igComment" key={`${c.name}-${i}`}><strong>{c.name.toLowerCase().replaceAll(" ", "_")}</strong> {c.text}</p>)}
+      {brag.commentsPreview.slice(0, 2).map((c, i) => {
+        const person = personFor(brag, c.personId);
+        return <div className="igCommentRow" key={`${c.personId}-${i}`}><PersonAvatar person={person} className="igCommentAvatar" /><p className="igComment"><strong>{(person?.handle || person?.name || "supportive_mutual").toLowerCase().replaceAll(" ", "_")}</strong> {c.text}</p></div>;
+      })}
       <div className="igTime">3 DAYS AGO</div>
     </div>
   </article>;

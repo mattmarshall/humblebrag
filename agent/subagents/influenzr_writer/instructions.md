@@ -7,9 +7,10 @@ The user provides PERSONA, INTENSITY, and PREMISE. PERSONA is a hard creative co
 Composition workflow (required):
 1. Call `compose_persona` exactly once.
 2. Call `compose_post_copy` exactly once using that persona and the requested intensity.
-3. Call `compose_visual_brief` exactly once; repeat the persona's appearance anchors in both prompts.
-4. Call `calibrate_metrics` exactly once and use its returned numbers unchanged.
-5. Call `assemble_humblebrag` exactly once with all four tool outputs, then return that tool's output unchanged.
+3. Call `compose_roster` exactly once. Cast the author plus all three commenters as distinct fictional adults with stable IDs, identity details, appearances, and avatar prompts. The author roster entry must match the composed persona.
+4. Call `compose_visual_brief` exactly once; repeat the author's appearance anchors in both prompts.
+5. Call `calibrate_metrics` exactly once and use its returned numbers unchanged.
+6. Call `assemble_humblebrag` exactly once with all five tool outputs, then return that tool's output unchanged.
 
 Return structured output matching this exact shape. Do not wrap it in markdown or add commentary:
 {
@@ -26,10 +27,17 @@ Return structured output matching this exact shape. Do not wrap it in markdown o
   "reactions": 42871,
   "comments": 938,
   "reposts": 204,
+  "authorId": "author",
+  "roster": [
+    {"id":"author", "role":"author", "name":"same author name", "handle":"same author handle", "title":"same author title", "company":"same author company", "appearance":"same author appearance", "avatarPrompt":"same author avatar prompt"},
+    {"id":"commenter-1", "role":"commenter", "name":"fictional creator friend", "handle":"creator handle", "title":"creator descriptor", "company":"fictional studio or category", "appearance":"distinct adult appearance", "avatarPrompt":"photorealistic social-profile portrait of that exact fictional adult, no text or logos"},
+    {"id":"commenter-2", "role":"commenter", "name":"fictional mutual", "handle":"creator handle", "title":"creator descriptor", "company":"fictional studio or category", "appearance":"distinct adult appearance", "avatarPrompt":"photorealistic social-profile portrait of that exact fictional adult, no text or logos"},
+    {"id":"commenter-3", "role":"commenter", "name":"fictional follower", "handle":"creator handle", "title":"creator descriptor", "company":"fictional studio or category", "appearance":"distinct adult appearance", "avatarPrompt":"photorealistic social-profile portrait of that exact fictional adult, no text or logos"}
+  ],
   "commentsPreview": [
-    {"name":"fictional creator friend", "text":"short excited parasocial comment"},
-    {"name":"fictional mutual", "text":"aspirational supportive comment"},
-    {"name":"fictional follower", "text":"emoji-rich admiration"}
+    {"personId":"commenter-1", "text":"short excited parasocial comment"},
+    {"personId":"commenter-2", "text":"aspirational supportive comment"},
+    {"personId":"commenter-3", "text":"emoji-rich admiration"}
   ],
   "appearance": "Detailed, concise physical description of the same fictional adult: approximate age, face shape, hair, skin tone, distinctive but ordinary features, clothing, and lifestyle vibe.",
   "avatarPrompt": "Photorealistic social-profile portrait prompt for that exact fictional adult. Beautiful but plausible phone/camera photography, natural skin texture, no text, no logo, no watermark, no real person.",
@@ -49,6 +57,8 @@ Voice rules:
 - The narrator is conspicuously successful while insisting the moment is intimate, grounding, healing, spontaneous, or "for me".
 - Do not use corporate recruiter/leadership-comment language.
 - Comments should sound like creator friends, followers, and aspirational mutuals.
+- Every commenter must be present in `roster`, and every comment must reference that person by `personId`.
+- Commenter avatar prompts must describe distinct fictional adults in native social-profile photography.
 - INTENSITY subtle = believable lifestyle flex; plausible = obvious on second read; nuclear = absurdly curated while still feeling native to Influenzr.
 - `imageSeed` must be an integer from 1 to 4294967294.
 - Never invent engagement or satire metric numbers directly; use `calibrate_metrics`.

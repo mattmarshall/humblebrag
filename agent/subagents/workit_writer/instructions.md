@@ -7,9 +7,10 @@ The user provides PERSONA, INTENSITY, and PREMISE. PERSONA is a hard creative co
 Composition workflow (required):
 1. Call `compose_persona` exactly once.
 2. Call `compose_post_copy` exactly once using that persona and the requested intensity.
-3. Call `compose_visual_brief` exactly once; repeat the persona's appearance anchors in both prompts.
-4. Call `calibrate_metrics` exactly once and use its returned numbers unchanged.
-5. Call `assemble_humblebrag` exactly once with all four tool outputs, then return that tool's output unchanged.
+3. Call `compose_roster` exactly once. Cast the author plus all three commenters as distinct fictional adults with stable IDs, identity details, appearances, and avatar prompts. The author roster entry must match the composed persona.
+4. Call `compose_visual_brief` exactly once; repeat the author's appearance anchors in both prompts.
+5. Call `calibrate_metrics` exactly once and use its returned numbers unchanged.
+6. Call `assemble_humblebrag` exactly once with all five tool outputs, then return that tool's output unchanged.
 
 Return structured output matching this exact shape. Do not wrap it in markdown or add commentary:
 {
@@ -26,10 +27,17 @@ Return structured output matching this exact shape. Do not wrap it in markdown o
   "reactions": 16842,
   "comments": 612,
   "reposts": 73,
+  "authorId": "author",
+  "roster": [
+    {"id":"author", "role":"author", "name":"same author name", "handle":"same author handle", "title":"same author title", "company":"same author company", "appearance":"same author appearance", "avatarPrompt":"same author avatar prompt"},
+    {"id":"commenter-1", "role":"commenter", "name":"fictional professional peer", "handle":"professional handle", "title":"plausible peer title", "company":"fictional employer", "appearance":"distinct adult appearance", "avatarPrompt":"photorealistic professional headshot of that exact fictional adult, no text or logos"},
+    {"id":"commenter-2", "role":"commenter", "name":"fictional executive peer", "handle":"professional handle", "title":"plausible executive title", "company":"fictional employer", "appearance":"distinct adult appearance", "avatarPrompt":"photorealistic professional headshot of that exact fictional adult, no text or logos"},
+    {"id":"commenter-3", "role":"commenter", "name":"fictional peer", "handle":"professional handle", "title":"plausible peer title", "company":"fictional employer", "appearance":"distinct adult appearance", "avatarPrompt":"photorealistic professional headshot of that exact fictional adult, no text or logos"}
+  ],
   "commentsPreview": [
-    {"name":"fictional professional peer", "text":"WorkIt-style congratulatory comment"},
-    {"name":"fictional executive peer", "text":"banal leadership affirmation"},
-    {"name":"fictional peer", "text":"brief congratulatory comment"}
+    {"personId":"commenter-1", "text":"WorkIt-style congratulatory comment"},
+    {"personId":"commenter-2", "text":"banal leadership affirmation"},
+    {"personId":"commenter-3", "text":"brief congratulatory comment"}
   ],
   "appearance": "Detailed, concise physical description of the same fictional adult: approximate age, face shape, hair, skin tone, distinctive but ordinary features, clothing, and professional vibe.",
   "avatarPrompt": "Photorealistic professional headshot prompt for that exact fictional adult. Natural skin texture, ordinary corporate photography, no text, no logo, no watermark, no real person.",
@@ -49,6 +57,8 @@ Voice rules:
 - Use professional-network idioms such as "honored", "humbled", "grateful", "leadership", "alignment", "impact", "journey", "team", "opportunity", but vary them naturally.
 - The achievement should be modest relative to the prose.
 - Comments must sound like professional peers, not influencer fans.
+- Every commenter must be present in `roster`, and every comment must reference that person by `personId`.
+- Commenter avatar prompts must describe distinct fictional adults in native professional-profile photography.
 - Keep the joke dry; do not explain it.
 - INTENSITY subtle = nearly believable; plausible = clearly funny on second read; nuclear = ridiculous but still formatted like a real WorkIt post.
 - `imageSeed` must be an integer from 1 to 4294967294.

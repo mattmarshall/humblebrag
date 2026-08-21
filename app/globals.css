@@ -2,6 +2,10 @@
   --ink:#121318;--muted:#666b76;--line:#dadde3;--paper:#f5f3ee;--panel:#fff;
   --workit:#0a66c2;--workit-dark:#004182;--coral:#ff4e78;--purple:#7b4dff;--green:#31a36c;
 }
+
+.miniAvatar{object-fit:cover;flex:0 0 auto}
+.igCommentRow{display:flex;align-items:flex-start;gap:7px;margin-top:6px}
+.igCommentAvatar{width:26px;height:26px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:#ececec;font-size:10px;font-weight:700;flex:0 0 auto}
 *{box-sizing:border-box}
 html{background:var(--paper)}
 body{margin:0;color:var(--ink);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 90% 0,rgba(128,154,255,.17),transparent 29%),radial-gradient(circle at 0 30%,rgba(255,205,164,.14),transparent 24%),var(--paper)}
