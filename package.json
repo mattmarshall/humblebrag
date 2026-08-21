@@ -12,7 +12,9 @@
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "latest",
     "@aws-sdk/client-bedrock-runtime": "latest",
+    "@vercel/analytics": "latest",
     "@vercel/functions": "latest",
+    "@vercel/speed-insights": "latest",
     "ai": "latest",
     "eve": "latest",
     "next": "latest",
