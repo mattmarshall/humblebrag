@@ -207,6 +207,22 @@ export function Generator({
     onFinish(snapshot) {
       if (snapshot.status === "error") return;
       const messages = snapshot.data.messages ?? [];
+      const submitted = [...messages]
+        .reverse()
+        .flatMap((message) => [...message.parts].reverse())
+        .find((part) =>
+          part.type === "dynamic-tool" &&
+          part.toolName === "submit_humblebrag" &&
+          part.state === "output-available" &&
+          !part.partial,
+        );
+      const toolOutput = submitted?.type === "dynamic-tool" && submitted.state === "output-available"
+        ? normalizeBrag(submitted.output, inFlightNetwork.current)
+        : null;
+      if (toolOutput) {
+        void generateImages({ ...toolOutput, personaId: inFlightPersona.current });
+        return;
+      }
       const last = [...messages].reverse().find((message) => message.role === "assistant");
       const text = last?.parts
         ?.filter((part: any) => part.type === "text")

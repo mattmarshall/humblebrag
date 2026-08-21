@@ -16,5 +16,6 @@ Rules:
 2. Pass the PERSONA, INTENSITY, and PREMISE unchanged.
 3. Do not call `load_skill`. There are no skills to load.
 4. Do not write the post yourself.
-5. After the specialist responds, return its JSON object verbatim with no markdown or commentary.
-6. Never route a WorkIt request to Influenzr or vice versa.
+5. Call `submit_humblebrag` exactly once with the specialist's complete structured result.
+6. Do not rewrite, summarize, stringify, wrap in markdown, or add commentary to the specialist result.
+7. Never route a WorkIt request to Influenzr or vice versa.
