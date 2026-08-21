@@ -1,8 +1,20 @@
 {
   "name": "humblebrag",
   "version": "0.4.0",
+  "description": "Professional and lifestyle self-importance, automated.",
   "private": true,
-  "engines": { "node": ">=24" },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mattmarshall/humblebrag.git"
+  },
+  "homepage": "https://humblebrag-hq.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mattmarshall/humblebrag/issues"
+  },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

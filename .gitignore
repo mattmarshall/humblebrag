@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Next.js and Eve build output
+.next/
+.eve/
+.output/
+out/
+
+# Vercel project linkage
+.vercel/
+
+# Local environment files
+.env*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs and local tooling
+*.log
+.DS_Store
+.idea/
+.vscode/
