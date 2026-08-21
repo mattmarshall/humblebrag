@@ -33,19 +33,14 @@ The two networks intentionally have separate agent instructions, persona vocabul
 
 The progress UI exposes humorous generated artifacts while the real pipeline advances through copy, avatar, scene, and finishing stages.
 
-## AWS / Vercel configuration
+## Development
 
-Node 24+ is required.
+Node.js 24 or newer is required.
 
-```text
-AWS_ROLE_ARN=arn:aws:iam::658367926314:role/humblebrag-vercel-production
-BEDROCK_REGION=us-west-2
-BEDROCK_TEXT_MODEL=us.amazon.nova-pro-v1:0
-BEDROCK_TEXT_FALLBACK_MODEL=us.amazon.nova-lite-v1:0
-BEDROCK_IMAGE_MODEL=stability.stable-image-ultra-v1:1
+```bash
+npm install
+npm run dev
 ```
-
-**Important:** do not use `AWS_REGION` as the application Bedrock region. Vercel Functions populate `AWS_REGION` based on the Function's execution location. The app deliberately uses `BEDROCK_REGION` and defaults it to `us-west-2`.
 
 ## Embed
 
@@ -64,3 +59,7 @@ The embed loader creates an iframe pointed at `/embed` and auto-generates the re
 ## Safety / parody boundaries
 
 All generated people, companies, brands, events, and comments are fictional. Image prompts explicitly exclude real celebrities/public figures, logos, and readable brand marks. The UI uses original parody names and marks rather than copying official trademarks.
+
+## License
+
+[MIT](./LICENSE)
