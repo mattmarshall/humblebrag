@@ -169,10 +169,11 @@ export async function POST(request: Request) {
       region,
     });
     const message = cause instanceof Error ? cause.message : "Image generation failed";
+    const throttled = /too many requests|throttl/i.test(message);
     return Response.json({
       error: `${message} [model=${modelId}, region=${region}]`,
       modelId,
       region,
-    }, { status: 500 });
+    }, { status: throttled ? 429 : 500 });
   }
 }

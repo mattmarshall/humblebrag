@@ -185,24 +185,28 @@ export function Generator({
     person?: RosterPerson,
     seed = next.imageSeed,
   ) => {
-    const response = await fetch("/api/images", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        kind,
-        postId: postId.current,
-        personId: person?.id || (kind === "avatar" ? next.authorId : undefined),
-        network: next.network,
-        prompt: kind === "person" ? person?.avatarPrompt : kind === "avatar" ? next.avatarPrompt : next.postImagePrompt,
-        seed,
-        referenceImageDataUrl,
-      }),
-    });
-    const image = await response.json() as ImageResponse;
-    if (!response.ok || !image.dataUrl) {
-      throw new Error(image.error || `Image generation failed (${response.status})`);
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const response = await fetch("/api/images", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          postId: postId.current,
+          personId: person?.id || (kind === "avatar" ? next.authorId : undefined),
+          network: next.network,
+          prompt: kind === "person" ? person?.avatarPrompt : kind === "avatar" ? next.avatarPrompt : next.postImagePrompt,
+          seed,
+          referenceImageDataUrl,
+        }),
+      });
+      const image = await response.json() as ImageResponse;
+      if (response.ok && image.dataUrl) return image;
+      if (response.status !== 429 || attempt === 2) {
+        throw new Error(image.error || `Image generation failed (${response.status})`);
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 1_500 * (2 ** attempt)));
     }
-    return image;
+    throw new Error("Image generation exhausted its retry budget.");
   };
 
   const generateImages = async (next: Humblebrag) => {
@@ -222,10 +226,14 @@ export function Generator({
       setPhase("scene");
       setErrorStage("scene");
       const commenters = withAvatar.roster.filter((person) => person.role === "commenter");
-      const [scene, ...commenterAvatars] = await Promise.all([
+      const [scene, firstCommenterAvatar] = await Promise.all([
         requestImage("post", withAvatar, avatar.dataUrl),
-        ...commenters.map((person, index) => requestImage("person", withAvatar, undefined, person, Math.min(4_294_967_294, withAvatar.imageSeed + index + 1))),
+        commenters[0] ? requestImage("person", withAvatar, undefined, commenters[0], Math.min(4_294_967_294, withAvatar.imageSeed + 1)) : Promise.resolve(undefined),
       ]);
+      const commenterAvatars = [firstCommenterAvatar];
+      for (let index = 1; index < commenters.length; index += 1) {
+        commenterAvatars.push(await requestImage("person", withAvatar, undefined, commenters[index], Math.min(4_294_967_294, withAvatar.imageSeed + index + 1)));
+      }
       const commenterUrls = new Map(commenters.map((person, index) => [person.id, commenterAvatars[index]?.url || commenterAvatars[index]?.dataUrl]));
       const finished = {
         ...withAvatar,
