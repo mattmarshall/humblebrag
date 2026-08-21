@@ -329,12 +329,46 @@ export function Generator({
       const saved = await response.json() as { id?: string; error?: string };
       if (!response.ok || !saved.id) throw new Error(saved.error || "Could not create a permanent post record.");
       postId.current = saved.id;
-      await generateImages(next);
+      setDraftBrag(next);
+      setPhase("avatar");
+      setErrorStage("avatar");
+      await waitForQueuedImages(saved.id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not persist the post.");
       setErrorStage("copy");
       setPhase("error");
     }
+  };
+
+  const waitForQueuedImages = async (id: string) => {
+    const deadline = Date.now() + 10 * 60 * 1_000;
+    while (Date.now() < deadline) {
+      const response = await fetch(`/api/posts/${id}`, { cache: "no-store" });
+      const result = await response.json() as { status?: string; post?: Humblebrag; error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not read image job status.");
+      if (result.post) {
+        setDraftBrag(result.post);
+        setPhase(result.post.avatarUrl ? "scene" : "avatar");
+        setErrorStage(result.post.avatarUrl ? "scene" : "avatar");
+      }
+      if (result.status === "error") throw new Error(result.error || "Image generation failed.");
+      if (result.status === "complete" && result.post) {
+        const finished = result.post;
+        setPhase("finishing");
+        window.setTimeout(() => {
+          setBrag(finished);
+          setPreviewPostId(id);
+          setDraftBrag(undefined);
+          setError(undefined);
+          setErrorStage(undefined);
+          setPhase(null);
+          if (!compact) router.push(`/p/${id}`);
+        }, 850);
+        return;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 2_000));
+    }
+    throw new Error("Image generation is taking longer than expected. The durable job will keep retrying; use the permalink to check back.");
   };
 
   const busy = phase !== null && phase !== "error";
@@ -380,10 +414,17 @@ export function Generator({
     setPhase(null);
   };
 
-  const retryImages = () => {
-    if (!draftBrag) return;
+  const retryImages = async () => {
+    if (!draftBrag || !postId.current) return;
     setError(undefined);
-    void generateImages({ ...draftBrag, avatarUrl: undefined, postImageUrl: undefined });
+    setPhase(draftBrag.avatarUrl ? "scene" : "avatar");
+    const response = await fetch(`/api/posts/${postId.current}/images`, { method: "POST" });
+    if (!response.ok) {
+      setError("Could not requeue image generation.");
+      setPhase("error");
+      return;
+    }
+    void waitForQueuedImages(postId.current);
   };
 
   const showTextOnly = () => {

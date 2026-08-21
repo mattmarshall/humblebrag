@@ -19,10 +19,14 @@ export function ensureDatabase() {
         "avatar_url" text,
         "post_image_url" text,
         "error" text,
+        "image_attempts" integer DEFAULT 0 NOT NULL,
+        "image_next_attempt_at" timestamp with time zone DEFAULT now() NOT NULL,
         "created_at" timestamp with time zone DEFAULT now() NOT NULL,
         "completed_at" timestamp with time zone
       )
     `);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_attempts" integer DEFAULT 0 NOT NULL`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_next_attempt_at" timestamp with time zone DEFAULT now() NOT NULL`);
     await getDb().execute(sql`
       CREATE INDEX IF NOT EXISTS "posts_status_created_at_idx"
       ON "posts" USING btree ("status", "created_at")
@@ -46,6 +50,17 @@ export function ensureDatabase() {
     await getDb().execute(sql`
       CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
       ON "post_people" USING btree ("post_id", "position")
+    `);
+    await getDb().execute(sql`
+      CREATE TABLE IF NOT EXISTS "image_generation_lock" (
+        "id" text PRIMARY KEY NOT NULL,
+        "holder" text,
+        "expires_at" timestamp with time zone DEFAULT now() NOT NULL
+      )
+    `);
+    await getDb().execute(sql`
+      INSERT INTO "image_generation_lock" ("id") VALUES ('global')
+      ON CONFLICT ("id") DO NOTHING
     `);
   })();
   return ready;
