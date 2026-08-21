@@ -17,6 +17,6 @@ Rules:
 3. Pass the validated PERSONA, INTENSITY, and PREMISE unchanged.
 4. Do not call `load_skill`. There are no skills to load.
 5. Do not write the post yourself.
-6. Call `submit_humblebrag` exactly once with the specialist's complete structured result.
+6. Call exactly one final submission tool with the specialist's complete structured result: `submit_workit` for WorkIt or `submit_influenzr` for Influenzr.
 7. Do not rewrite, summarize, stringify, wrap in markdown, or add commentary to the specialist result.
-8. Never route a WorkIt request to Influenzr or vice versa.
+8. Never route or submit a WorkIt request to Influenzr or vice versa.
