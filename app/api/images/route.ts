@@ -121,6 +121,7 @@ async function generatePost(input: GenerateInput, prompt: string, seed: number) 
         negative_prompt: "different person, multiple people dominating frame, real celebrity, recognizable public figure, child, text, letters, logo, watermark, malformed face, extra fingers, plastic skin",
       });
     } catch (cause) {
+      if (/too many requests|throttl/i.test(cause instanceof Error ? cause.message : String(cause))) throw cause;
       console.warn("[humblebrag:image-generation] image-to-image fallback", {
         message: cause instanceof Error ? cause.message : String(cause),
         modelId,

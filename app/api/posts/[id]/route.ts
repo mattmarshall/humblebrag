@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const record = await findPost(id);
   if (!record) return Response.json({ error: "Post not found" }, { status: 404 });
-  return Response.json({ id: record.id, status: record.status, post: hydratePost(record) });
+  return Response.json({ id: record.id, status: record.status, error: record.error, post: hydratePost(record) });
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
