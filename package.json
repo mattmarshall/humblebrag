@@ -19,16 +19,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "latest",
     "@aws-sdk/client-bedrock-runtime": "latest",
+    "@neondatabase/serverless": "^1.1.0",
     "@vercel/analytics": "latest",
+    "@vercel/blob": "^2.8.0",
     "@vercel/functions": "latest",
     "@vercel/speed-insights": "latest",
     "ai": "latest",
+    "drizzle-orm": "^0.45.2",
     "eve": "latest",
+    "nanoid": "^6.0.1",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
@@ -38,6 +44,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "drizzle-kit": "^0.31.10",
     "typescript": "latest"
   }
 }

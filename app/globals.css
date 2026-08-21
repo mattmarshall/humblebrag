@@ -107,3 +107,15 @@ button{color:inherit}
 }
 
 ::selection { background: color-mix(in srgb, var(--hb-gold) 45%, white); color: var(--hb-navy); }
+
+/* Addressable, shareable posts ------------------------------------------ */
+.permalinkShell{min-height:100vh}
+.permalinkIntro{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end;padding:58px 0 34px}
+.permalinkIntro h1{font:500 clamp(48px,7vw,84px)/.92 Georgia,serif;letter-spacing:-.05em;margin:13px 0 0}
+.permalinkIntro h1 em{color:var(--hb-periwinkle);font-weight:500}
+.copyLinkButton{border:0;border-radius:13px;background:var(--hb-navy);color:#fff;cursor:pointer;font-weight:800;padding:14px 18px;min-width:196px}
+.permalinkCard{padding:34px;border:1px solid rgba(18,19,24,.12);border-radius:28px;background:#eef0f3;display:grid;place-items:center;box-shadow:0 28px 80px rgba(45,48,67,.09)}
+.permalinkMeta{text-align:center;color:#7b808d;font-size:11px;margin:18px 0}
+.permalinkShell .navAside{text-decoration:none}
+
+@media(max-width:700px){.permalinkIntro{grid-template-columns:1fr;padding:42px 0 24px}.copyLinkButton{width:100%}.permalinkCard{padding:0;border-radius:16px;overflow:hidden}.permalinkIntro h1{font-size:48px}}

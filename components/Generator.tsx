@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEveAgent } from "eve/react";
 import { GenerationProgress, type GenerationPhase } from "./GenerationProgress";
 import {
@@ -13,6 +14,7 @@ import {
 
 type ImageResponse = {
   dataUrl?: string;
+  url?: string;
   seed?: number;
   modelId?: string;
   region?: string;
@@ -27,6 +29,7 @@ type GeneratorProps = {
   initialPrompt?: string;
   initialPersona?: string;
   autoGenerate?: boolean;
+  initialPost?: Humblebrag;
 };
 
 const PERSONAS: Record<Network, { value: string; label: string }[]> = {
@@ -132,12 +135,14 @@ export function Generator({
   initialPrompt,
   initialPersona = "random",
   autoGenerate = false,
+  initialPost,
 }: GeneratorProps) {
+  const router = useRouter();
   const [network, setNetwork] = useState<Network>(initialNetwork);
   const [persona, setPersona] = useState(initialPersona);
   const [intensity, setIntensity] = useState<Intensity>("plausible");
   const [prompt, setPrompt] = useState(initialPrompt || defaultPrompt(initialNetwork));
-  const [brag, setBrag] = useState<Humblebrag>(() => sampleForNetwork(initialNetwork));
+  const [brag, setBrag] = useState<Humblebrag>(() => initialPost || sampleForNetwork(initialNetwork));
   const [draftBrag, setDraftBrag] = useState<Humblebrag>();
   const [phase, setPhase] = useState<GenerationPhase | null>(null);
   const [error, setError] = useState<string>();
@@ -145,6 +150,7 @@ export function Generator({
   const inFlightNetwork = useRef<Network>(initialNetwork);
   const inFlightPersona = useRef(initialPersona);
   const autoRan = useRef(false);
+  const postId = useRef<string | undefined>(undefined);
 
   const requestImage = async (
     kind: "avatar" | "post",
@@ -156,6 +162,7 @@ export function Generator({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         kind,
+        postId: postId.current,
         network: next.network,
         prompt: kind === "avatar" ? next.avatarPrompt : next.postImagePrompt,
         seed: next.imageSeed,
@@ -175,14 +182,23 @@ export function Generator({
       setPhase("avatar");
       setErrorStage("avatar");
       const avatar = await requestImage("avatar", next);
-      const withAvatar = { ...next, avatarUrl: avatar.dataUrl };
+      const withAvatar = { ...next, avatarUrl: avatar.url || avatar.dataUrl };
       setDraftBrag(withAvatar);
 
       setPhase("scene");
       setErrorStage("scene");
       const scene = await requestImage("post", withAvatar, avatar.dataUrl);
-      const finished = { ...withAvatar, postImageUrl: scene.dataUrl };
+      const finished = { ...withAvatar, postImageUrl: scene.url || scene.dataUrl };
       setDraftBrag(finished);
+
+      if (postId.current) {
+        const response = await fetch(`/api/posts/${postId.current}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ status: "complete" }),
+        });
+        if (!response.ok) throw new Error("The post was generated but its permanent record could not be finalized.");
+      }
 
       setPhase("finishing");
       window.setTimeout(() => {
@@ -191,10 +207,16 @@ export function Generator({
         setError(undefined);
         setErrorStage(undefined);
         setPhase(null);
+        if (!compact && postId.current) router.push(`/p/${postId.current}`);
       }, 850);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Image generation failed.");
       setPhase("error");
+      if (postId.current) void fetch(`/api/posts/${postId.current}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "error", error: cause instanceof Error ? cause.message : "Image generation failed" }),
+      });
     }
   };
 
@@ -220,7 +242,7 @@ export function Generator({
         ? normalizeBrag(submitted.output, inFlightNetwork.current)
         : null;
       if (toolOutput) {
-        void generateImages({ ...toolOutput, personaId: inFlightPersona.current });
+        void persistAndGenerate({ ...toolOutput, personaId: inFlightPersona.current });
         return;
       }
       const last = [...messages].reverse().find((message) => message.role === "assistant");
@@ -235,9 +257,27 @@ export function Generator({
         setPhase("error");
         return;
       }
-      void generateImages({ ...parsed, personaId: inFlightPersona.current });
+      void persistAndGenerate({ ...parsed, personaId: inFlightPersona.current });
     },
   });
+
+  const persistAndGenerate = async (next: Humblebrag) => {
+    try {
+      const response = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ post: next, premise: prompt.trim(), persona: inFlightPersona.current, intensity }),
+      });
+      const saved = await response.json() as { id?: string; error?: string };
+      if (!response.ok || !saved.id) throw new Error(saved.error || "Could not create a permanent post record.");
+      postId.current = saved.id;
+      await generateImages(next);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not persist the post.");
+      setErrorStage("copy");
+      setPhase("error");
+    }
+  };
 
   const busy = phase !== null && phase !== "error";
   const embed = useMemo(() => `<script async src="https://humblebrag-hq.vercel.app/embed.js" data-network="${network}" data-persona="${persona}" data-prompt="${prompt.replaceAll('"', '&quot;')}"></script>`, [network, persona, prompt]);
@@ -250,6 +290,7 @@ export function Generator({
     setError(undefined);
     setErrorStage("copy");
     setDraftBrag(undefined);
+    postId.current = undefined;
     setPhase("copy");
     agent.reset();
     void agent.send(`NETWORK: ${network}\nPERSONA: ${persona}\nINTENSITY: ${intensity}\nPREMISE: ${clean}`);
