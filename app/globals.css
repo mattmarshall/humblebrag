@@ -100,7 +100,7 @@ button{color:inherit}
 .brandType span:last-child { color: var(--hb-periwinkle); }
 
 .brand:hover .brandMark { transform: rotate(-2deg) scale(1.03); }
-.brandMark { transition: transform 180ms ease; }
+.brandMark { transition: filter 180ms ease, transform 180ms ease; }
 
 .siteNav {
   border-bottom-color: color-mix(in srgb, var(--hb-navy) 12%, transparent);
@@ -135,6 +135,7 @@ button{color:inherit}
   html{background:#0d0f16}
   body{background:radial-gradient(circle at 90% 0,rgba(91,95,239,.18),transparent 31%),radial-gradient(circle at 0 30%,rgba(245,172,22,.08),transparent 25%),var(--paper)}
   .siteNav{border-bottom-color:rgba(231,234,244,.14)}
+  .brandMark{filter:brightness(1.9) saturate(1.08) drop-shadow(0 6px 18px rgba(91,95,239,.2))}
   .navAside,.eyebrow,.embedDetails,.permalinkMeta{color:#9ca3b3}
   .intro h1 em,.permalinkIntro h1 em{color:#9296ff}
   .intro p{color:#b4b9c5}
