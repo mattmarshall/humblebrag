@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb } from "../../../lib/db";
-import { posts } from "../../../lib/db/schema";
+import { postPeople, posts } from "../../../lib/db/schema";
 import { ensureDatabase } from "../../../lib/db/ensure";
 import type { Humblebrag } from "../../../components/HumblebragCard";
 import { humblebragPostSchema, intensitySchema } from "../../../agent/lib/humblebrag";
@@ -18,6 +18,13 @@ const createPostSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = createPostSchema.parse(await request.json());
+    const peopleById = new Map(input.post.roster.map((person) => [person.id, person]));
+    if (peopleById.size !== input.post.roster.length) throw new Error("Roster IDs must be unique");
+    const author = peopleById.get(input.post.authorId);
+    if (!author || author.role !== "author" || author.name !== input.post.name) throw new Error("Roster author must match the post author");
+    if (input.post.commentsPreview.some((comment) => peopleById.get(comment.personId)?.role !== "commenter")) {
+      throw new Error("Every comment must reference a roster commenter");
+    }
     await ensureDatabase();
     const id = nanoid(12);
     await getDb().insert(posts).values({
@@ -28,6 +35,11 @@ export async function POST(request: Request) {
       intensity: input.intensity,
       payload: input.post as unknown as Humblebrag,
     });
+    await getDb().insert(postPeople).values(input.post.roster.map((person, position) => ({
+      postId: id,
+      position,
+      ...person,
+    })));
     return Response.json({ id, permalink: `/p/${id}` }, { status: 201 });
   } catch (cause) {
     console.error("[humblebrag:create-post]", cause);

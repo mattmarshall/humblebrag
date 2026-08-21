@@ -26,18 +26,18 @@ The two networks intentionally have separate agent instructions, persona vocabul
 ## Generation pipeline
 
 1. Root eve agent routes the premise to the network-specific subagent.
-2. Specialist returns structured JSON for a fictional persona/post.
-3. Bedrock Stable Image Ultra creates a fictional avatar.
-4. Stable Image Ultra creates the post scene, using the avatar as an image-to-image identity reference when possible.
+2. Specialist returns structured JSON for a fictional post and a four-person roster: one author plus three commenters.
+3. Bedrock Stable Image Ultra creates the author's avatar.
+4. Stable Image Ultra creates the post scene and all commenter avatars in parallel, using the author avatar as an image-to-image identity reference for the scene when possible.
 5. React renders the final post in the selected parody network skin.
-6. Drizzle stores the post in Neon and Vercel Blob stores both generated images.
+6. Drizzle stores the post and relational roster in Neon; Vercel Blob stores every generated image.
 7. Every completed post receives a durable `/p/[id]` permalink.
 
 The progress UI exposes humorous generated artifacts while the real pipeline advances through copy, avatar, scene, and finishing stages.
 
 ## Persistence
 
-Generated copy and metadata are stored in Neon Postgres through Drizzle. Generated avatars and scene images are written to public Vercel Blob URLs instead of remaining as ephemeral base64 data. The homepage features a completed persisted post when one is available, and each generation redirects to its shareable permalink after both images are safely stored.
+Generated copy and metadata are stored in Neon Postgres through Drizzle. Each post owns a relational roster whose comments reference stable person IDs. Author, commenter, and scene images are written to public Vercel Blob URLs instead of remaining as ephemeral base64 data. The homepage features a completed persisted post when one is available, and each generation redirects to its shareable permalink after every image is safely stored.
 
 Schema changes live in `drizzle/`. Apply them with `npm run db:migrate` after providing `DATABASE_URL` in the process environment.
 

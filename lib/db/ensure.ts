@@ -27,6 +27,26 @@ export function ensureDatabase() {
       CREATE INDEX IF NOT EXISTS "posts_status_created_at_idx"
       ON "posts" USING btree ("status", "created_at")
     `);
+    await getDb().execute(sql`
+      CREATE TABLE IF NOT EXISTS "post_people" (
+        "post_id" text NOT NULL REFERENCES "posts"("id") ON DELETE CASCADE,
+        "id" text NOT NULL,
+        "role" text NOT NULL,
+        "position" integer NOT NULL,
+        "name" text NOT NULL,
+        "handle" text NOT NULL,
+        "title" text NOT NULL,
+        "company" text NOT NULL,
+        "appearance" text NOT NULL,
+        "avatar_prompt" text NOT NULL,
+        "avatar_url" text,
+        CONSTRAINT "post_people_post_id_id_pk" PRIMARY KEY("post_id", "id")
+      )
+    `);
+    await getDb().execute(sql`
+      CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
+      ON "post_people" USING btree ("post_id", "position")
+    `);
   })();
   return ready;
 }

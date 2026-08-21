@@ -3,8 +3,24 @@ import { z } from "zod";
 export const intensitySchema = z.enum(["subtle", "plausible", "nuclear"]);
 
 export const commentSchema = z.object({
-  name: z.string().min(1),
+  personId: z.string().min(1),
   text: z.string().min(1),
+});
+
+export const rosterPersonSchema = z.object({
+  id: z.string().min(1),
+  role: z.enum(["author", "commenter"]),
+  name: z.string().min(1),
+  handle: z.string().min(1),
+  title: z.string().min(1),
+  company: z.string().min(1),
+  appearance: z.string().min(1),
+  avatarPrompt: z.string().min(1),
+});
+
+export const rosterSchema = z.object({
+  authorId: z.string().min(1),
+  roster: z.array(rosterPersonSchema).length(4),
 });
 
 export const personaSchema = z.object({
@@ -45,6 +61,7 @@ export const generationBriefSchema = z.object({
 
 const commonPostSchema = personaSchema
   .merge(copySchema)
+  .merge(rosterSchema)
   .merge(visualBriefSchema)
   .merge(engagementSchema);
 

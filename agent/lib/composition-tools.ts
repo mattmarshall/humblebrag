@@ -6,6 +6,7 @@ import {
   influenzrPostSchema,
   intensitySchema,
   personaSchema,
+  rosterSchema,
   visualBriefSchema,
   workitPostSchema,
 } from "./humblebrag";
@@ -25,7 +26,7 @@ export function composePersonaTool(network: Network) {
 
 export function composePostCopyTool(network: Network) {
   return defineTool({
-    description: `Compose native ${network} post copy, exactly four hashtags, and exactly three fictional comments. Call once after composing the persona.`,
+    description: `Compose native ${network} post copy, exactly four hashtags, and exactly three fictional comments. Each comment must reference a commenter ID that will be defined by compose_roster. Call once after composing the persona.`,
     inputSchema: copySchema,
     outputSchema: copySchema,
     execute(copy) {
@@ -33,6 +34,17 @@ export function composePostCopyTool(network: Network) {
         ...copy,
         hashtags: copy.hashtags.map((tag) => tag.replace(/^#+/, "").trim()),
       };
+    },
+  });
+}
+
+export function composeRosterTool(network: Network) {
+  return defineTool({
+    description: `Cast the complete fictional ${network} roster: one author and exactly three commenters. Give every person a stable ID, identity details, appearance, and avatar prompt. The author must match the composed persona, and comment personId values must reference the three commenters.`,
+    inputSchema: rosterSchema,
+    outputSchema: rosterSchema,
+    execute(roster) {
+      return roster;
     },
   });
 }
@@ -101,7 +113,7 @@ export function calibrateMetricsTool(network: Network) {
 export function assembleHumblebragTool(network: Network) {
   const schema = network === "workit" ? workitPostSchema : influenzrPostSchema;
   return defineTool({
-    description: `Assemble and validate the complete ${network} post from the outputs of the persona, copy, visual, and metrics tools. Call exactly once, then return its output unchanged.`,
+    description: `Assemble and validate the complete ${network} post from the outputs of the persona, copy, roster, visual, and metrics tools. Call exactly once, then return its output unchanged.`,
     inputSchema: schema,
     outputSchema: schema,
     execute(post) {

@@ -1,9 +1,9 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { awsCredentialsProvider } from "@vercel/functions/oidc";
 import { put } from "@vercel/blob";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../lib/db";
-import { posts } from "../../../lib/db/schema";
+import { postPeople, posts } from "../../../lib/db/schema";
 import { ensureDatabase } from "../../../lib/db/ensure";
 
 export const runtime = "nodejs";
@@ -23,11 +23,12 @@ const client = new BedrockRuntimeClient({
   credentials: awsCredentialsProvider({ roleArn, clientConfig: { region } }),
 });
 
-type ImageKind = "avatar" | "post";
+type ImageKind = "avatar" | "person" | "post";
 type Network = "workit" | "influenzr";
 
 type GenerateInput = {
   postId?: string;
+  personId?: string;
   kind?: ImageKind;
   network?: Network;
   prompt?: string;
@@ -125,26 +126,39 @@ export async function POST(request: Request) {
     const input = await request.json() as GenerateInput;
     const kind = input.kind;
     const prompt = input.prompt?.trim();
-    if ((kind !== "avatar" && kind !== "post") || !prompt) {
+    if ((kind !== "avatar" && kind !== "person" && kind !== "post") || !prompt) {
       return Response.json({ error: "kind and prompt are required" }, { status: 400 });
+    }
+    if (kind === "person" && (!input.postId || !input.personId)) {
+      return Response.json({ error: "postId and personId are required for roster avatars" }, { status: 400 });
     }
 
     const seed = clampSeed(input.seed);
-    const result = kind === "avatar"
+    const result = kind === "avatar" || kind === "person"
       ? await generateAvatar(prompt, seed)
       : await generatePost(input, prompt, seed);
 
     let url: string | undefined;
     if (input.postId) {
       await ensureDatabase();
-      const blob = await put(`posts/${input.postId}/${kind}.jpg`, Buffer.from(result.base64, "base64"), {
+      const path = kind === "person" && input.personId
+        ? `posts/${input.postId}/people/${input.personId}.jpg`
+        : `posts/${input.postId}/${kind}.jpg`;
+      const blob = await put(path, Buffer.from(result.base64, "base64"), {
         access: "public",
         contentType: "image/jpeg",
         addRandomSuffix: false,
         allowOverwrite: true,
       });
       url = blob.url;
-      await getDb().update(posts).set(kind === "avatar" ? { avatarUrl: url } : { postImageUrl: url }).where(eq(posts.id, input.postId));
+      if (kind === "person" && input.personId) {
+        await getDb().update(postPeople).set({ avatarUrl: url }).where(and(eq(postPeople.postId, input.postId), eq(postPeople.id, input.personId)));
+      } else {
+        await getDb().update(posts).set(kind === "avatar" ? { avatarUrl: url } : { postImageUrl: url }).where(eq(posts.id, input.postId));
+        if (kind === "avatar" && input.personId) {
+          await getDb().update(postPeople).set({ avatarUrl: url }).where(and(eq(postPeople.postId, input.postId), eq(postPeople.id, input.personId)));
+        }
+      }
     }
 
     return Response.json({ dataUrl: result.dataUrl, url, seed: result.seed, kind, modelId, region });
