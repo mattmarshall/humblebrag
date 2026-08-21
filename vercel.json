@@ -4,6 +4,6 @@
     "app/api/queues/generate-images/route.ts": { "maxDuration": 300 }
   },
   "crons": [
-    { "path": "/api/queues/generate-images", "schedule": "* * * * *" }
+    { "path": "/api/queues/generate-images", "schedule": "0 3 * * *" }
   ]
 }
