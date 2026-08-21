@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export type Network = "workit" | "influenzr";
 
 export type Humblebrag = {
@@ -82,7 +84,7 @@ function initials(name: string) {
 
 function Avatar({ brag, compact = false }: { brag: Humblebrag; compact?: boolean }) {
   if (brag.avatarUrl) {
-    return <img className={compact ? "avatarPhoto miniProfilePhoto" : "avatarPhoto"} src={brag.avatarUrl} alt={`Fictional avatar for ${brag.name}`} />;
+    return <Image className={compact ? "avatarPhoto miniProfilePhoto" : "avatarPhoto"} src={brag.avatarUrl} alt={`Fictional avatar for ${brag.name}`} width={96} height={96} sizes="48px" />;
   }
   return <div className={compact ? "avatarFallback miniProfilePhoto" : "avatarFallback"}>{initials(brag.name)}</div>;
 }
@@ -113,7 +115,7 @@ export function WorkItCard({ brag }: { brag: Humblebrag }) {
     </div>
 
     {brag.postImageUrl
-      ? <img className="workitMedia" src={brag.postImageUrl} alt="Fictional professional-network post scene" />
+      ? <Image className="workitMedia" src={brag.postImageUrl} alt="Fictional professional-network post scene" width={1100} height={576} sizes="(max-width: 700px) 100vw, 555px" />
       : <div className="workitMedia workitMediaFallback"><span>WORKIT LEADERSHIP EVENT</span><b>{brag.award}</b><small>{brag.event}</small></div>}
 
     <div className="workitStats">
@@ -160,7 +162,7 @@ export function InfluenzrCard({ brag }: { brag: Humblebrag }) {
     </header>
 
     {brag.postImageUrl
-      ? <img className="influenzrMedia" src={brag.postImageUrl} alt="Fictional image-first social post scene" />
+      ? <Image className="influenzrMedia" src={brag.postImageUrl} alt="Fictional image-first social post scene" width={1000} height={1000} sizes="(max-width: 700px) 100vw, 470px" />
       : <div className="influenzrMedia igFallback"><span>golden hour pending</span><small>{brag.award}</small></div>}
 
     <div className="igActions">

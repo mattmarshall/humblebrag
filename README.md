@@ -30,8 +30,16 @@ The two networks intentionally have separate agent instructions, persona vocabul
 3. Bedrock Stable Image Ultra creates a fictional avatar.
 4. Stable Image Ultra creates the post scene, using the avatar as an image-to-image identity reference when possible.
 5. React renders the final post in the selected parody network skin.
+6. Drizzle stores the post in Neon and Vercel Blob stores both generated images.
+7. Every completed post receives a durable `/p/[id]` permalink.
 
 The progress UI exposes humorous generated artifacts while the real pipeline advances through copy, avatar, scene, and finishing stages.
+
+## Persistence
+
+Generated copy and metadata are stored in Neon Postgres through Drizzle. Generated avatars and scene images are written to public Vercel Blob URLs instead of remaining as ephemeral base64 data. The homepage features a completed persisted post when one is available, and each generation redirects to its shareable permalink after both images are safely stored.
+
+Schema changes live in `drizzle/`. Apply them with `npm run db:migrate` after providing `DATABASE_URL` in the process environment.
 
 ## Development
 

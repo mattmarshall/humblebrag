@@ -1,5 +1,10 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { awsCredentialsProvider } from "@vercel/functions/oidc";
+import { put } from "@vercel/blob";
+import { eq } from "drizzle-orm";
+import { getDb } from "../../../lib/db";
+import { posts } from "../../../lib/db/schema";
+import { ensureDatabase } from "../../../lib/db/ensure";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -22,6 +27,7 @@ type ImageKind = "avatar" | "post";
 type Network = "workit" | "influenzr";
 
 type GenerateInput = {
+  postId?: string;
   kind?: ImageKind;
   network?: Network;
   prompt?: string;
@@ -59,6 +65,7 @@ async function invoke(body: Record<string, unknown>) {
     throw new Error(parsed.finish_reasons?.[0] || "Bedrock returned no image");
   }
   return {
+    base64: parsed.images[0],
     dataUrl: `data:image/jpeg;base64,${parsed.images[0]}`,
     seed: parsed.seeds?.[0],
   };
@@ -127,7 +134,20 @@ export async function POST(request: Request) {
       ? await generateAvatar(prompt, seed)
       : await generatePost(input, prompt, seed);
 
-    return Response.json({ ...result, kind, modelId, region });
+    let url: string | undefined;
+    if (input.postId) {
+      await ensureDatabase();
+      const blob = await put(`posts/${input.postId}/${kind}.jpg`, Buffer.from(result.base64, "base64"), {
+        access: "public",
+        contentType: "image/jpeg",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+      });
+      url = blob.url;
+      await getDb().update(posts).set(kind === "avatar" ? { avatarUrl: url } : { postImageUrl: url }).where(eq(posts.id, input.postId));
+    }
+
+    return Response.json({ dataUrl: result.dataUrl, url, seed: result.seed, kind, modelId, region });
   } catch (cause) {
     console.error("[humblebrag:image-generation]", {
       cause,
