@@ -130,12 +130,12 @@ button{color:inherit}
 @media(prefers-color-scheme:dark){
   :root{
     --ink:#f3f4f8;--muted:#a7acb8;--line:#323642;--paper:#0d0f16;--panel:#171a23;
-    --hb-navy:#dbe4ff;--hb-periwinkle:#9296ff;--hb-ink-muted:#a7afc2;--hb-paper:#0d0f16;
+    --hb-navy:#fff;--hb-periwinkle:#9296ff;--hb-ink-muted:#a7afc2;--hb-paper:#0d0f16;
   }
   html{background:#0d0f16}
   body{background:radial-gradient(circle at 90% 0,rgba(91,95,239,.18),transparent 31%),radial-gradient(circle at 0 30%,rgba(245,172,22,.08),transparent 25%),var(--paper)}
   .siteNav{border-bottom-color:rgba(231,234,244,.14)}
-  .brandMark{filter:brightness(1.9) saturate(1.08) drop-shadow(0 6px 18px rgba(91,95,239,.2))}
+  .brandMark{filter:brightness(0) invert(1) drop-shadow(0 6px 18px rgba(91,95,239,.18))}
   .navAside,.eyebrow,.embedDetails,.permalinkMeta{color:#9ca3b3}
   .intro h1 em,.permalinkIntro h1 em{color:#9296ff}
   .intro p{color:#b4b9c5}
