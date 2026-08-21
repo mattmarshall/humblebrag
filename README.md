@@ -37,7 +37,9 @@ The progress UI exposes humorous generated artifacts while the real pipeline adv
 
 ## Persistence
 
-Generated copy and metadata are stored in Neon Postgres through Drizzle. Each post owns a relational roster whose comments reference stable person IDs. Author, commenter, and scene images are written to public Vercel Blob URLs instead of remaining as ephemeral base64 data. The homepage features a completed persisted post when one is available, and each generation redirects to its shareable permalink after every image is safely stored.
+Generated copy and metadata are stored in Neon Postgres through Drizzle. Each post owns a relational roster whose comments reference stable person IDs. Author, commenter, and scene images are written to public Vercel Blob URLs instead of remaining as ephemeral base64 data. The homepage independently resolves a completed permalink-backed default for WorkIt and Influenzr, and each generation redirects to its shareable permalink after every image is safely stored.
+
+Post and roster creation is transactional. Image requests must match the persisted visual briefs, completed posts are immutable through the generation API, and a post cannot be finalized until its scene and all four roster avatars have durable Blob URLs.
 
 Schema changes live in `drizzle/`. Apply them with `npm run db:migrate` after providing `DATABASE_URL` in the process environment.
 

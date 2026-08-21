@@ -1,11 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { cache } from "react";
 import type { Humblebrag, RosterPerson } from "../components/HumblebragCard";
 import { getDb } from "./db";
 import { ensureDatabase } from "./db/ensure";
 import { postPeople, posts, type StoredPerson, type StoredPost } from "./db/schema";
-
-export const DEFAULT_POST_ID = "brock-panel";
 
 type StoredPostWithPeople = StoredPost & { people?: StoredPerson[] };
 
@@ -67,22 +65,35 @@ export const findPost = cache(async (id: string) => {
   return { ...record, people };
 });
 
-export async function findHomepagePost() {
-  try {
-    const preferred = await findPost(DEFAULT_POST_ID);
-    if (preferred?.status === "complete") return preferred;
+async function findHomepagePostForNetwork(network: "workit" | "influenzr") {
+  const configuredId = process.env[`DEFAULT_${network.toUpperCase()}_POST_ID`]?.trim();
+  if (configuredId) {
+    const configured = await findPost(configuredId);
+    if (configured?.status === "complete" && configured.network === network) return configured;
+    console.warn("[humblebrag:homepage-post] configured post unavailable", { network, configuredId });
+  }
 
-    const [latest] = await getDb()
-      .select()
-      .from(posts)
-      .where(eq(posts.status, "complete"))
-      .orderBy(desc(posts.completedAt))
-      .limit(1);
-    if (!latest) return undefined;
-    const people = await getDb().select().from(postPeople).where(eq(postPeople.postId, latest.id)).orderBy(postPeople.position);
-    return { ...latest, people };
+  const [latest] = await getDb()
+    .select()
+    .from(posts)
+    .where(and(eq(posts.status, "complete"), eq(posts.network, network)))
+    .orderBy(desc(posts.completedAt))
+    .limit(1);
+  if (!latest) return undefined;
+  const people = await getDb().select().from(postPeople).where(eq(postPeople.postId, latest.id)).orderBy(postPeople.position);
+  return { ...latest, people };
+}
+
+export async function findHomepagePosts() {
+  try {
+    await ensureDatabase();
+    const [workit, influenzr] = await Promise.all([
+      findHomepagePostForNetwork("workit"),
+      findHomepagePostForNetwork("influenzr"),
+    ]);
+    return { workit, influenzr };
   } catch (cause) {
-    console.warn("[humblebrag:homepage-post]", cause);
-    return undefined;
+    console.warn("[humblebrag:homepage-posts]", cause);
+    return {};
   }
 }

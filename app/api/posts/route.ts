@@ -27,19 +27,21 @@ export async function POST(request: Request) {
     }
     await ensureDatabase();
     const id = nanoid(12);
-    await getDb().insert(posts).values({
-      id,
-      network: input.post.network,
-      premise: input.premise,
-      persona: input.persona,
-      intensity: input.intensity,
-      payload: input.post as unknown as Humblebrag,
+    await getDb().transaction(async (tx) => {
+      await tx.insert(posts).values({
+        id,
+        network: input.post.network,
+        premise: input.premise,
+        persona: input.persona,
+        intensity: input.intensity,
+        payload: input.post as unknown as Humblebrag,
+      });
+      await tx.insert(postPeople).values(input.post.roster.map((person, position) => ({
+        postId: id,
+        position,
+        ...person,
+      })));
     });
-    await getDb().insert(postPeople).values(input.post.roster.map((person, position) => ({
-      postId: id,
-      position,
-      ...person,
-    })));
     return Response.json({ id, permalink: `/p/${id}` }, { status: 201 });
   } catch (cause) {
     console.error("[humblebrag:create-post]", cause);

@@ -36,6 +36,8 @@ type GenerateInput = {
   referenceImageDataUrl?: string;
 };
 
+const MAX_REFERENCE_IMAGE_BYTES = 8 * 1024 * 1024;
+
 type StabilityResponse = {
   images?: string[];
   finish_reasons?: (string | null)[];
@@ -51,6 +53,26 @@ function base64FromDataUrl(value?: string) {
   if (!value) return undefined;
   const match = value.match(/^data:image\/(?:jpeg|jpg|png|webp);base64,(.+)$/i);
   return match?.[1];
+}
+
+async function validatePersistedRequest(input: GenerateInput, kind: ImageKind, prompt: string) {
+  if (!input.postId) throw new Error("postId is required");
+  await ensureDatabase();
+  const [post] = await getDb().select().from(posts).where(eq(posts.id, input.postId)).limit(1);
+  if (!post) throw new Error("Post not found");
+  if (post.status !== "pending" && post.status !== "error") throw new Error("Completed posts cannot be regenerated");
+  if (post.network !== input.network) throw new Error("Image network does not match the persisted post");
+
+  if (kind === "person") {
+    if (!input.personId) throw new Error("personId is required for roster avatars");
+    const [person] = await getDb().select().from(postPeople).where(and(eq(postPeople.postId, input.postId), eq(postPeople.id, input.personId))).limit(1);
+    if (!person || person.avatarPrompt !== prompt) throw new Error("Roster avatar request does not match the persisted person");
+    return;
+  }
+
+  const expectedPrompt = kind === "avatar" ? post.payload.avatarPrompt : post.payload.postImagePrompt;
+  if (prompt !== expectedPrompt) throw new Error("Image prompt does not match the persisted post");
+  if (kind === "avatar" && input.personId !== post.payload.authorId) throw new Error("Author avatar does not match the persisted roster");
 }
 
 async function invoke(body: Record<string, unknown>) {
@@ -132,6 +154,10 @@ export async function POST(request: Request) {
     if (kind === "person" && (!input.postId || !input.personId)) {
       return Response.json({ error: "postId and personId are required for roster avatars" }, { status: 400 });
     }
+    if (!input.postId || prompt.length > 3_000 || (input.referenceImageDataUrl?.length || 0) > MAX_REFERENCE_IMAGE_BYTES * 1.4) {
+      return Response.json({ error: "Invalid or oversized image request" }, { status: 400 });
+    }
+    await validatePersistedRequest(input, kind, prompt);
 
     const seed = clampSeed(input.seed);
     const result = kind === "avatar" || kind === "person"
@@ -140,7 +166,6 @@ export async function POST(request: Request) {
 
     let url: string | undefined;
     if (input.postId) {
-      await ensureDatabase();
       const path = kind === "person" && input.personId
         ? `posts/${input.postId}/people/${input.personId}.jpg`
         : `posts/${input.postId}/${kind}.jpg`;
@@ -170,10 +195,19 @@ export async function POST(request: Request) {
     });
     const message = cause instanceof Error ? cause.message : "Image generation failed";
     const throttled = /too many requests|throttl/i.test(message);
+    const status = throttled
+      ? 429
+      : /post not found/i.test(message)
+        ? 404
+        : /completed posts/i.test(message)
+          ? 409
+          : /required|invalid|oversized|does not match/i.test(message)
+            ? 400
+            : 500;
     return Response.json({
       error: `${message} [model=${modelId}, region=${region}]`,
       modelId,
       region,
-    }, { status: throttled ? 429 : 500 });
+    }, { status });
   }
 }

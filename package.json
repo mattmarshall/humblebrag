@@ -1,6 +1,6 @@
 {
   "name": "humblebrag",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Professional and lifestyle self-importance, automated.",
   "private": true,
   "license": "MIT",
@@ -20,6 +20,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
