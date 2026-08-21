@@ -1,4 +1,5 @@
 :root{
+  color-scheme:light dark;
   --ink:#121318;--muted:#666b76;--line:#dadde3;--paper:#f5f3ee;--panel:#fff;
   --workit:#0a66c2;--workit-dark:#004182;--coral:#ff4e78;--purple:#7b4dff;--green:#31a36c;
 }
@@ -124,3 +125,48 @@ button{color:inherit}
 .permalinkShell .navAside{text-decoration:none}
 
 @media(max-width:700px){.permalinkIntro{grid-template-columns:1fr;padding:42px 0 24px}.copyLinkButton{width:100%}.permalinkCard{padding:0;border-radius:16px;overflow:hidden}.permalinkIntro h1{font-size:48px}}
+
+/* Follow the operating-system theme unless the system preference changes. */
+@media(prefers-color-scheme:dark){
+  :root{
+    --ink:#f3f4f8;--muted:#a7acb8;--line:#323642;--paper:#0d0f16;--panel:#171a23;
+    --hb-navy:#dbe4ff;--hb-periwinkle:#9296ff;--hb-ink-muted:#a7afc2;--hb-paper:#0d0f16;
+  }
+  html{background:#0d0f16}
+  body{background:radial-gradient(circle at 90% 0,rgba(91,95,239,.18),transparent 31%),radial-gradient(circle at 0 30%,rgba(245,172,22,.08),transparent 25%),var(--paper)}
+  .siteNav{border-bottom-color:rgba(231,234,244,.14)}
+  .navAside,.eyebrow,.embedDetails,.permalinkMeta{color:#9ca3b3}
+  .intro h1 em,.permalinkIntro h1 em{color:#9296ff}
+  .intro p{color:#b4b9c5}
+  .generator{background:rgba(21,24,34,.76);border-color:rgba(231,234,244,.13);box-shadow:0 28px 80px rgba(0,0,0,.28)}
+  .networkSwitch{background:#10131b}
+  .networkSwitch button{color:#9fa6b6}
+  .networkSwitch button.selected{background:#252936;color:#f5f6fa;border-color:#3b4050;box-shadow:0 3px 12px rgba(0,0,0,.25)}
+  .networkSwitch small,.controlRow label,.promptHints,.privacyNote{color:#9299a8}
+  .promptPanel,.previewPanel{background:#171a23;border-color:#343846}
+  .promptPanel textarea,.controlRow select{background:#10131a;border-color:#373b48;color:#f2f3f7}
+  .promptPanel textarea:focus,.controlRow select:focus{border-color:#858aff;box-shadow:0 0 0 3px rgba(133,138,255,.16)}
+  .promptHints button{color:#a6a9ff}
+  .generateButton{background:#eceef8;color:#11141c}
+  .previewHeader{background:#13161e;border-bottom-color:#343846;color:#a4aab7}
+  .previewHeaderActions>a{color:#aeb4c1}.previewHeaderActions>a:hover,.previewNetwork{color:#a6a9ff}
+  .previewBody,.permalinkCard{background:#10131a}
+  .previewPanel.isGenerating .previewBody{background:linear-gradient(145deg,#151821,#11141d)}
+  .permalinkCard{border-color:rgba(231,234,244,.13);box-shadow:0 28px 80px rgba(0,0,0,.28)}
+  .copyLinkButton{background:#eceef8;color:#11141c}
+  .workitCard,.influenzrCard{background:#181b23;color:#f0f1f5;border-color:#363a45;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .identitySub,.connection,.workitStats,.commentBubble small,.igMuted,.igTime{color:#a5aab5}
+  .moreButton,.workitActions{color:#d2d5dd}
+  .workitStats,.workitActions{border-color:#363a45}
+  .workitActions button:hover{background:#242833}
+  .commentBubble{background:#272b35}
+  .avatarFallback,.miniAvatar,.igCommentAvatar{background:#303541;color:#e5e7ee}
+  .storyRing .avatarPhoto,.storyRing .avatarFallback{border-color:#181b23}
+  .influenzrMedia{background:#282c35}
+  .igActions svg{stroke:#f0f1f5}
+  .igTags{color:#8cbcff}
+  .errorActions{background:#181b23;border-top-color:#343846}
+  .errorActions button{background:#222631;border-color:#404553;color:#f0f1f5}
+  .errorActions button:first-child{background:#eceef8;border-color:#eceef8;color:#11141c}
+  ::selection{background:color-mix(in srgb,var(--hb-gold) 52%,#181b23);color:#fff}
+}

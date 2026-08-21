@@ -132,7 +132,7 @@ async function generatePost(input: GenerateInput, prompt: string, seed: number) 
   return invoke({
     prompt: `${prompt} Entirely fictional adult, not a celebrity or public figure. Plausible social-media photography, natural skin texture.`,
     mode: "text-to-image",
-    aspect_ratio: input.network === "influenzr" ? "4:5" : "3:2",
+    aspect_ratio: input.network === "influenzr" ? "1:1" : "3:2",
     output_format: "jpeg",
     seed,
     negative_prompt: "real celebrity, recognizable public figure, child, text, letters, logo, watermark, malformed face, extra fingers, duplicated person, plastic skin",
