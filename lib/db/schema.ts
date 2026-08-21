@@ -14,6 +14,7 @@ export const posts = pgTable("posts", {
   avatarUrl: text("avatar_url"),
   postImageUrl: text("post_image_url"),
   error: text("error"),
+  runpodJobId: text("runpod_job_id"),
   imageAttempts: integer("image_attempts").notNull().default(0),
   imageNextAttemptAt: timestamp("image_next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

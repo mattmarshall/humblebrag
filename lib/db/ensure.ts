@@ -27,6 +27,7 @@ export function ensureDatabase() {
     `);
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_attempts" integer DEFAULT 0 NOT NULL`);
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_next_attempt_at" timestamp with time zone DEFAULT now() NOT NULL`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "runpod_job_id" text`);
     await getDb().execute(sql`
       CREATE INDEX IF NOT EXISTS "posts_status_created_at_idx"
       ON "posts" USING btree ("status", "created_at")
@@ -51,17 +52,9 @@ export function ensureDatabase() {
       CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
       ON "post_people" USING btree ("post_id", "position")
     `);
-    await getDb().execute(sql`
-      CREATE TABLE IF NOT EXISTS "image_generation_lock" (
-        "id" text PRIMARY KEY NOT NULL,
-        "holder" text,
-        "expires_at" timestamp with time zone DEFAULT now() NOT NULL
-      )
-    `);
-    await getDb().execute(sql`
-      INSERT INTO "image_generation_lock" ("id") VALUES ('global')
-      ON CONFLICT ("id") DO NOTHING
-    `);
+    // The Bedrock path serialized image jobs behind a global Postgres lease.
+    // RunPod Serverless is the queue now, so the lease is dead weight.
+    await getDb().execute(sql`DROP TABLE IF EXISTS "image_generation_lock"`);
   })();
   return ready;
 }

@@ -6,7 +6,7 @@ import { postPeople, posts } from "../../../lib/db/schema";
 import { ensureDatabase } from "../../../lib/db/ensure";
 import type { Humblebrag } from "../../../components/HumblebragCard";
 import { humblebragPostSchema, intensitySchema } from "../../../agent/lib/humblebrag";
-import { runImageJob } from "../queues/generate-images/route";
+import { enqueuePostImages } from "../../../lib/image-jobs";
 
 export const runtime = "nodejs";
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         ...person,
       }))),
     ]);
-    waitUntil(runImageJob(id));
+    waitUntil(enqueuePostImages(id));
     return Response.json({ id, permalink: `/p/${id}` }, { status: 201 });
   } catch (cause) {
     console.error("[humblebrag:create-post]", cause);
