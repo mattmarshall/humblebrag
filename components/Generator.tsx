@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEveAgent } from "eve/react";
 import { GenerationProgress, type GenerationPhase } from "./GenerationProgress";
 import {
@@ -31,6 +32,8 @@ type GeneratorProps = {
   initialPersona?: string;
   autoGenerate?: boolean;
   initialPost?: Humblebrag;
+  initialPosts?: Partial<Record<Network, Humblebrag>>;
+  initialPostIds?: Partial<Record<Network, string>>;
 };
 
 const PERSONAS: Record<Network, { value: string; label: string }[]> = {
@@ -162,13 +165,16 @@ export function Generator({
   initialPersona = "random",
   autoGenerate = false,
   initialPost,
+  initialPosts,
+  initialPostIds,
 }: GeneratorProps) {
   const router = useRouter();
   const [network, setNetwork] = useState<Network>(initialNetwork);
   const [persona, setPersona] = useState(initialPersona);
   const [intensity, setIntensity] = useState<Intensity>("plausible");
   const [prompt, setPrompt] = useState(initialPrompt || defaultPrompt(initialNetwork));
-  const [brag, setBrag] = useState<Humblebrag>(() => initialPost || sampleForNetwork(initialNetwork));
+  const [brag, setBrag] = useState<Humblebrag>(() => initialPosts?.[initialNetwork] || initialPost || sampleForNetwork(initialNetwork));
+  const [previewPostId, setPreviewPostId] = useState<string | undefined>(() => initialPostIds?.[initialNetwork]);
   const [draftBrag, setDraftBrag] = useState<Humblebrag>();
   const [phase, setPhase] = useState<GenerationPhase | null>(null);
   const [error, setError] = useState<string>();
@@ -254,6 +260,7 @@ export function Generator({
       setPhase("finishing");
       window.setTimeout(() => {
         setBrag(finished);
+        setPreviewPostId(postId.current);
         setDraftBrag(undefined);
         setError(undefined);
         setErrorStage(undefined);
@@ -341,6 +348,7 @@ export function Generator({
     setError(undefined);
     setErrorStage("copy");
     setDraftBrag(undefined);
+    setPreviewPostId(undefined);
     postId.current = undefined;
     setPhase("copy");
     agent.reset();
@@ -366,7 +374,8 @@ export function Generator({
     setNetwork(next);
     setPersona("random");
     setPrompt(defaultPrompt(next));
-    setBrag(sampleForNetwork(next));
+    setBrag(initialPosts?.[next] || sampleForNetwork(next));
+    setPreviewPostId(initialPostIds?.[next]);
     setError(undefined);
     setPhase(null);
   };
@@ -432,7 +441,7 @@ export function Generator({
       </form>}
 
       <div className={`previewPanel ${phase ? "isGenerating" : ""}`}>
-        <div className="previewHeader"><span>{phase ? "Agent activity" : "Live preview"}</span><span className="previewNetwork">{network === "workit" ? "WorkIt" : "Influenzr"}</span></div>
+        <div className="previewHeader"><span>{phase ? "Agent activity" : "Live preview"}</span><span className="previewHeaderActions">{!phase && previewPostId ? <Link href={`/p/${previewPostId}`}>permalink ↗</Link> : null}<span className="previewNetwork">{network === "workit" ? "WorkIt" : "Influenzr"}</span></span></div>
         <div className="previewBody">
           {phase
             ? <GenerationProgress phase={phase} network={inFlightNetwork.current} error={error} metrics={activeMetrics} />

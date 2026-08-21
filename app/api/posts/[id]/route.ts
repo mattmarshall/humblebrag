@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../../../lib/db";
-import { posts } from "../../../../lib/db/schema";
+import { postPeople, posts } from "../../../../lib/db/schema";
 import { findPost, hydratePost } from "../../../../lib/posts";
 import { ensureDatabase } from "../../../../lib/db/ensure";
 
@@ -23,6 +23,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const input = updateSchema.parse(await request.json());
   await ensureDatabase();
+  if (input.status === "complete") {
+    const [post] = await getDb().select().from(posts).where(eq(posts.id, id)).limit(1);
+    if (!post) return Response.json({ error: "Post not found" }, { status: 404 });
+    const people = await getDb().select().from(postPeople).where(eq(postPeople.postId, id));
+    if (!post.avatarUrl || !post.postImageUrl || people.length !== 4 || people.some((person) => !person.avatarUrl)) {
+      return Response.json({ error: "Every roster and scene image must be persisted before completion" }, { status: 409 });
+    }
+  }
   const [record] = await getDb().update(posts).set({
     status: input.status,
     error: input.error,
