@@ -21,7 +21,16 @@ export async function POST(request: Request) {
   }
   if (!jobId) return Response.json({ error: "Missing job id" }, { status: 400 });
 
-  const job = await getJobStatus(jobId);
+  // An id RunPod does not recognise is a bad request, not a server fault.
+  // Returning 500 also makes RunPod retry the delivery twice for nothing.
+  let job;
+  try {
+    job = await getJobStatus(jobId);
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Unknown job";
+    console.warn("[humblebrag:runpod-webhook] unknown job", { jobId, message });
+    return Response.json({ error: "Unknown job" }, { status: 404 });
+  }
   await ensureDatabase();
 
   // Bind the job to the post through our own record, not through the payload.
