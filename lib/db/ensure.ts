@@ -52,9 +52,6 @@ export function ensureDatabase() {
       CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
       ON "post_people" USING btree ("post_id", "position")
     `);
-    // The Bedrock path serialized image jobs behind a global Postgres lease.
-    // RunPod Serverless is the queue now, so the lease is dead weight.
-    await getDb().execute(sql`DROP TABLE IF EXISTS "image_generation_lock"`);
   })();
   return ready;
 }
