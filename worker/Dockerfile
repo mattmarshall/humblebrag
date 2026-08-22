@@ -12,6 +12,13 @@ FROM runpod/worker-comfyui:${BASE_TAG}
 ARG COMFY_DIR=/comfyui
 ENV COMFY_DIR=${COMFY_DIR}
 
+# insightface ships no py3.12 wheel and compiles a Cython C++ extension from
+# source, which the base image cannot do — it has no g++. wget/unzip are for the
+# weight downloads further down.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential wget unzip \
+ && rm -rf /var/lib/apt/lists/*
+
 # InstantID custom nodes. Pinned: this pack's node names are the contract that
 # workflows/scene.json is written against.
 ARG INSTANTID_REF=main
@@ -20,14 +27,12 @@ RUN git clone https://github.com/cubiq/ComfyUI_InstantID.git ${COMFY_DIR}/custom
  && git checkout ${INSTANTID_REF} \
  && pip install --no-cache-dir -r requirements.txt
 
-# insightface + onnxruntime power InstantID's face analysis.
-RUN pip install --no-cache-dir insightface==0.7.3 onnxruntime-gpu
+# InstantID's requirements.txt already brings insightface; only the GPU
+# execution provider for its face analysis is missing.
+RUN pip install --no-cache-dir onnxruntime-gpu
 
 # Weights are baked into the image rather than pulled at cold start: a flex
 # worker that downloads 2GB before its first render defeats the point.
-RUN apt-get update && apt-get install -y --no-install-recommends wget unzip \
- && rm -rf /var/lib/apt/lists/*
-
 # NOTE: antelopev2 is pulled from a community mirror because insightface does not
 # publish it on a stable URL. Pin a SHA256 here before this image carries
 # production traffic — an unpinned third-party model download is a supply-chain
