@@ -11,14 +11,21 @@ const webhookBase = process.env.RUNPOD_WEBHOOK_BASE?.trim()
 
 const MAX_SEED = 4_294_967_294;
 
-// Ported verbatim from the retired Bedrock path (app/api/images/route.ts). These
-// carry the parody boundaries documented in README.md — no real people, no
-// logos, no readable brand marks — and RunPod applies no managed content filter
-// of its own, so they are the only thing enforcing them.
-const AVATAR_SUFFIX = "Entirely fictional adult, not a celebrity or public figure. Natural skin texture, believable optics, plausible asymmetry, no beauty-filter plastic skin.";
-const AVATAR_NEGATIVE = "real celebrity, recognizable public figure, child, text, letters, logo, watermark, malformed face, duplicated person, extra fingers, plastic skin, uncanny eyes";
-const SCENE_IDENTITY_SUFFIX = "Preserve the identity and distinctive facial traits of the reference adult while changing pose, environment, camera distance, and wardrobe only as needed for the scene. Plausible social-media photography, natural skin texture.";
-const SCENE_IDENTITY_NEGATIVE = "different person, multiple people dominating frame, real celebrity, recognizable public figure, child, text, letters, logo, watermark, malformed face, extra fingers, plastic skin";
+// These carry the parody boundaries documented in README.md — no real people,
+// no logos, no readable brand marks — and RunPod applies no managed content
+// filter of its own, so they are the only thing enforcing them.
+//
+// Deliberately NOT the Bedrock prompts. Stable Image Ultra followed
+// instructions; SDXL is CLIP-conditioned, truncates around 77 tokens, and has
+// no instruction-following at all — it renders instruction text as literal
+// content. The first live scene came back plastered with garbled words lifted
+// straight out of the prompt. So: short descriptive phrases only, negations
+// live in the negative prompt, and nothing about preserving identity (InstantID
+// does that architecturally, and saying it just wastes prompt budget).
+const AVATAR_SUFFIX = "photorealistic portrait photograph, natural skin texture, sharp focus";
+const AVATAR_NEGATIVE = "text, words, letters, typography, caption, watermark, logo, signage, celebrity, famous person, child, malformed face, duplicated person, extra fingers, plastic skin, uncanny eyes, illustration, cartoon";
+const SCENE_SUFFIX = "candid photograph, natural light, shallow depth of field";
+const SCENE_NEGATIVE = "text, words, letters, typography, caption, subtitles, poster, banner, signage, watermark, logo, celebrity, famous person, child, multiple people dominating frame, malformed face, extra fingers, plastic skin, illustration, cartoon, collage";
 
 type HydratedPost = ReturnType<typeof hydratePost>;
 
@@ -67,8 +74,8 @@ export async function buildJobInput(post: HydratedPost, postId: string) {
       build: (uploadUrl) => ({
         slot: "scene",
         kind: "scene",
-        prompt: `${post.postImagePrompt} ${SCENE_IDENTITY_SUFFIX}`,
-        negativePrompt: SCENE_IDENTITY_NEGATIVE,
+        prompt: `${post.postImagePrompt} ${SCENE_SUFFIX}`,
+        negativePrompt: SCENE_NEGATIVE,
         aspectRatio: post.network === "influenzr" ? "1:1" : "3:2",
         seed,
         uploadUrl,

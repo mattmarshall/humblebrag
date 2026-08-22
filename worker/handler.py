@@ -144,6 +144,21 @@ def render(graph):
     raise RuntimeError(f"Render timed out after {RENDER_TIMEOUT}s")
 
 
+def to_jpeg(image_bytes, quality=88):
+    """ComfyUI's SaveImage emits PNG. The keys, the signed Content-Type and the
+    rest of the app all say JPEG, and a 1.3MB PNG per image means ~6.5MB of
+    card for one post, so transcode before upload rather than mislabel."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    with Image.open(BytesIO(image_bytes)) as img:
+        buffer = BytesIO()
+        img.convert("RGB").save(buffer, format="JPEG", quality=quality,
+                                optimize=True, progressive=True)
+        return buffer.getvalue()
+
+
 def upload(url, image_bytes):
     """PUT to the presigned URL. Content-Type must match what the app signed."""
     request = urllib.request.Request(
@@ -201,8 +216,9 @@ def handler(job):
                 graph = avatar_graph
 
             image_bytes = render(apply_inputs(graph, values))
+            # Keep the PNG for identity reference (ComfyUI reloads it), upload JPEG.
             rendered[slot] = image_bytes
-            upload(image["uploadUrl"], image_bytes)
+            upload(image["uploadUrl"], to_jpeg(image_bytes))
             uploaded.append(slot)
             print(f"[humblebrag:worker] rendered {post_id} {slot}", flush=True)
         except Exception as cause:  # noqa: BLE001 - one bad slot must not lose the rest
