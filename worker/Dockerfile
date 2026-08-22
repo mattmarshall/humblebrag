@@ -6,7 +6,7 @@
 # images, with the scene identity-locked to the avatar rendered moments earlier —
 # and uploads each one to a presigned S3 URL, rather than returning base64 for a
 # single graph.
-ARG BASE_TAG=5.8.7-sdxl
+ARG BASE_TAG=5.8.6-sdxl
 FROM runpod/worker-comfyui:${BASE_TAG}
 
 ARG COMFY_DIR=/comfyui

@@ -47,7 +47,7 @@ signs the PUT URLs and passes them in.
 | `handler.py` | Orders the renders, drives the local ComfyUI HTTP API, uploads. |
 | `workflows/avatar.json` | SDXL text-to-image. Used for the author and all three commenters. |
 | `workflows/scene.json` | SDXL + InstantID, taking the rendered author avatar as the identity reference. |
-| `Dockerfile` | `runpod/worker-comfyui:5.8.7-sdxl` + InstantID nodes and weights. |
+| `Dockerfile` | `runpod/worker-comfyui:5.8.6-sdxl` + InstantID nodes and weights. |
 
 Workflows are ComfyUI **API format**. Any string input written as `"$name"` is a
 placeholder the handler fills: `prompt`, `negative_prompt`, `seed`, `width`,
