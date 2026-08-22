@@ -77,6 +77,36 @@ Then create a Serverless endpoint on that image:
 Put the endpoint id and an API key into the Vercel project as
 `RUNPOD_ENDPOINT_ID` and `RUNPOD_API_KEY`.
 
+## Tuning the scene
+
+Identity and composition pull against each other, and they are controlled
+separately. `ApplyInstantIDAdvanced` is used precisely because the basic
+`ApplyInstantID` collapses both into one `weight`.
+
+| Knob | Default | Effect |
+| --- | --- | --- |
+| `instantIdIpWeight` | 0.8 | Identity strength. Drop it and the scene becomes a different person. |
+| `instantIdCnStrength` | 0.25 | Layout control. InstantID derives ControlNet keypoints from the reference headshot, so a high value pins the scene to a centred, face-filling portrait no matter what the prompt asks for. |
+| `instantIdEndAt` | 0.8 | When control is released during the denoise. |
+
+Both are read per-image from the job payload, so they can be tuned without
+rebuilding the image — which otherwise costs ~20 minutes plus a cold start.
+
+What the live runs actually showed, at a fixed seed:
+
+- `weight 0.8` (combined): identity held, scene was a second headshot.
+- `weight 0.55` (combined): identity **lost**, scene still a headshot, and it
+  drifted to monochrome. Turning both down together is the trap.
+- `ip_weight 0.8` + `cn_strength 0.25`: identity held **and** the scene rendered
+  a microphone, a venue and different wardrobe.
+
+Prompts matter as much as the knobs. SDXL is CLIP-conditioned, truncates around
+77 tokens and does not follow instructions — instruction-style prose from the
+Bedrock era got rendered as literal garbled text in the image. Keep prompts to
+short descriptive phrases, put negations in the negative prompt, and say
+"colour" explicitly: "candid photograph, natural light" alone drifted to black
+and white.
+
 ## Validating the workflows
 
 ⚠️ `workflows/scene.json` is written against the node names exported by
