@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import type { Humblebrag } from "../../components/HumblebragCard";
 
 export const posts = pgTable("posts", {
@@ -15,6 +15,8 @@ export const posts = pgTable("posts", {
   postImageUrl: text("post_image_url"),
   error: text("error"),
   runpodJobId: text("runpod_job_id"),
+  allowSensitive: boolean("allow_sensitive").notNull().default(false),
+  sensitive: boolean("sensitive").notNull().default(false),
   imageAttempts: integer("image_attempts").notNull().default(0),
   imageNextAttemptAt: timestamp("image_next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

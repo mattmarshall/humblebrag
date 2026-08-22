@@ -37,6 +37,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
+import safety
+
 COMFY_URL = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
 WORKFLOW_DIR = pathlib.Path(__file__).parent / "workflows"
 COMFY_BOOT_TIMEOUT = int(os.environ.get("COMFY_BOOT_TIMEOUT", "300"))
@@ -203,8 +205,11 @@ def handler(job):
     avatar_graph = load_workflow("avatar")
     scene_graph = load_workflow("scene")
 
+    allow_sensitive = bool(payload.get("allowSensitive"))
     uploaded = []
     failed = []
+    sensitive = []
+    scores = {}
     rendered = {}
 
     # Render avatars first so an identity reference exists before the scene runs.
@@ -236,16 +241,30 @@ def handler(job):
                 graph = avatar_graph
 
             image_bytes = render(apply_inputs(graph, values))
+
+            # Classify before upload: a flagged image that reaches S3 is already
+            # publicly addressable on a guessable CloudFront path.
+            allowed, nsfw_score, reason = safety.verdict(image_bytes, allow_sensitive)
+            scores[slot] = round(nsfw_score, 4)
+            if not allowed:
+                print(f"[humblebrag:worker] BLOCKED {post_id} {slot}: {reason}", flush=True)
+                failed.append({"slot": slot, "error": reason, "nsfwScore": round(nsfw_score, 4)})
+                continue
+            if reason:
+                print(f"[humblebrag:worker] {reason} {post_id} {slot}", flush=True)
+                sensitive.append(slot)
+
             # Keep the PNG for identity reference (ComfyUI reloads it), upload JPEG.
             rendered[slot] = image_bytes
             upload(image["uploadUrl"], to_jpeg(image_bytes))
             uploaded.append(slot)
-            print(f"[humblebrag:worker] rendered {post_id} {slot}", flush=True)
+            print(f"[humblebrag:worker] rendered {post_id} {slot} nsfw={nsfw_score:.3f}", flush=True)
         except Exception as cause:  # noqa: BLE001 - one bad slot must not lose the rest
             print(f"[humblebrag:worker] FAILED {post_id} {slot}: {cause}", flush=True)
             failed.append({"slot": slot, "error": str(cause)})
 
-    return {"postId": post_id, "uploaded": uploaded, "failed": failed}
+    return {"postId": post_id, "uploaded": uploaded, "failed": failed,
+            "sensitive": sensitive, "nsfwScores": scores}
 
 
 if __name__ == "__main__":

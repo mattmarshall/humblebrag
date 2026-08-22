@@ -46,6 +46,37 @@ export type ImageRequest = {
   identityFrom?: ImageSlot;
 };
 
+/**
+ * Reject minor-adjacent prompts before anything is generated.
+ *
+ * The image classifier scores sexual content; it does not estimate age, so it
+ * cannot be the control here. The premise is user-supplied and reaches the
+ * prompt through the agent, so the final prompts are checked directly. This is
+ * deliberately blunt — these words have no legitimate use in a generator whose
+ * roster is adult professionals, so a false positive costs a retry while a false
+ * negative publishes to a public URL.
+ */
+const MINOR_TERMS = [
+  "child", "children", "kid", "kids", "boy", "girl", "teen", "teenage", "teenager",
+  "minor", "toddler", "infant", "baby", "babies", "schoolgirl", "schoolboy",
+  "underage", "preteen", "pre-teen", "adolescent", "juvenile", "youngster",
+  "kindergarten", "elementary school", "middle school", "high school", "student",
+];
+
+export function findMinorTerm(text: string) {
+  const haystack = text.toLowerCase();
+  return MINOR_TERMS.find((term) => new RegExp(`\\b${term.replace(/[-\s]/g, "[-\\s]")}\\b`).test(haystack));
+}
+
+function assertNoMinorTerms(images: ImageRequest[]) {
+  for (const image of images) {
+    const term = findMinorTerm(image.prompt);
+    if (term) {
+      throw new Error(`Image prompt for ${image.slot} references a minor ("${term}") and will not be generated`);
+    }
+  }
+}
+
 function clampSeed(value: number) {
   const n = Number.isFinite(value) ? Math.floor(value) : 1;
   return Math.min(MAX_SEED, Math.max(1, n));
@@ -102,6 +133,7 @@ export async function buildJobInput(post: HydratedPost, postId: string) {
   ];
 
   const images = await Promise.all(slots.map(async ({ slot, build }) => build(await presignUpload(postId, slot))));
+  assertNoMinorTerms(images);
   return { postId, network: post.network, images };
 }
 
@@ -117,8 +149,8 @@ async function runpod(path: string, init?: RequestInit) {
   return body;
 }
 
-export async function submitPostJob(post: HydratedPost, postId: string) {
-  const input = await buildJobInput(post, postId);
+export async function submitPostJob(post: HydratedPost, postId: string, allowSensitive = false) {
+  const input = { ...(await buildJobInput(post, postId)), allowSensitive };
   const body = await runpod("/run", {
     method: "POST",
     body: JSON.stringify({
@@ -133,7 +165,13 @@ export async function submitPostJob(post: HydratedPost, postId: string) {
 export type JobStatus = {
   id: string;
   status: "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED" | "TIMED_OUT";
-  output?: { postId?: string; uploaded?: string[]; failed?: Array<{ slot: string; error: string }> };
+  output?: {
+    postId?: string;
+    uploaded?: string[];
+    failed?: Array<{ slot: string; error: string; nsfwScore?: number }>;
+    sensitive?: string[];
+    nsfwScores?: Record<string, number>;
+  };
   error?: string;
 };
 

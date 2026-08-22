@@ -15,6 +15,7 @@ const createPostSchema = z.object({
   premise: z.string().min(1).max(2_000),
   persona: z.string().min(1).max(100),
   intensity: intensitySchema,
+  allowSensitive: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
         persona: input.persona,
         intensity: input.intensity,
         payload: input.post as unknown as Humblebrag,
+        allowSensitive: input.allowSensitive === true,
       }),
       getDb().insert(postPeople).values(input.post.roster.map((person, position) => ({
         postId: id,

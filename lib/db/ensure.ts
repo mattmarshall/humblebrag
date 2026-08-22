@@ -28,6 +28,8 @@ export function ensureDatabase() {
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_attempts" integer DEFAULT 0 NOT NULL`);
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_next_attempt_at" timestamp with time zone DEFAULT now() NOT NULL`);
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "runpod_job_id" text`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "allow_sensitive" boolean DEFAULT false NOT NULL`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "sensitive" boolean DEFAULT false NOT NULL`);
     await getDb().execute(sql`
       CREATE INDEX IF NOT EXISTS "posts_status_created_at_idx"
       ON "posts" USING btree ("status", "created_at")

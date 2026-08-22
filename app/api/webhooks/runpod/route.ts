@@ -52,6 +52,14 @@ export async function POST(request: Request) {
   const uploaded = (job.output?.uploaded || []).filter((slot): slot is ImageSlot =>
     slot === "avatar" || slot === "scene" || slot.startsWith("person:"));
 
+  // The worker only uploads a borderline image when the post carried consent.
+  // Record that so the post stays off the homepage and out of search results.
+  if (job.output?.sensitive?.length) {
+    await getDb().update(posts).set({ sensitive: true }).where(eq(posts.id, post.id));
+    console.warn("[humblebrag:runpod-webhook] sensitive images accepted by consent",
+      { postId: post.id, slots: job.output.sensitive, scores: job.output.nsfwScores });
+  }
+
   for (const slot of uploaded) {
     const url = mediaUrl(post.id, slot);
     if (slot === "avatar") {

@@ -170,6 +170,7 @@ export function Generator({
   const [phase, setPhase] = useState<GenerationPhase | null>(null);
   const [error, setError] = useState<string>();
   const [errorStage, setErrorStage] = useState<"copy" | "avatar" | "scene">();
+  const [allowSensitive, setAllowSensitive] = useState(false);
   const inFlightNetwork = useRef<Network>(initialNetwork);
   const inFlightPersona = useRef(initialPersona);
   const autoRan = useRef(false);
@@ -221,7 +222,7 @@ export function Generator({
       const response = await fetch("/api/posts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ post: next, premise: prompt.trim(), persona: inFlightPersona.current, intensity }),
+        body: JSON.stringify({ post: next, premise: prompt.trim(), persona: inFlightPersona.current, intensity, allowSensitive }),
       });
       const saved = await response.json() as { id?: string; error?: string };
       if (!response.ok || !saved.id) throw new Error(saved.error || "Could not create a permanent post record.");
@@ -372,6 +373,12 @@ export function Generator({
             </select>
           </label>
         </div>
+
+        <label className="sensitiveOptIn">
+          <input type="checkbox" checked={allowSensitive} disabled={busy}
+            onChange={(e) => setAllowSensitive(e.target.checked)} />
+          <span>Keep borderline results instead of failing. Such posts stay off the home page and out of search.</span>
+        </label>
 
         <div className="promptHints"><span>Try:</span><button type="button" disabled={busy} onClick={() => setPrompt(network === "workit" ? "A founder announcing a minor podcast appearance as if it were a Nobel Prize." : "A wellness creator receiving a free bathrobe and describing it as generational healing.")}>{network === "workit" ? "minor podcast → Nobel Prize" : "free bathrobe → healing"}</button></div>
         <button className="generateButton" disabled={busy || !prompt.trim()} type="submit">{busy ? "Agents are overachieving…" : "Generate humblebrag"}<span>↗</span></button>

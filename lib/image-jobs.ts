@@ -28,7 +28,7 @@ export async function enqueuePostImages(postId: string) {
   }
 
   try {
-    const jobId = await submitPostJob(hydratePost(record), postId);
+    const jobId = await submitPostJob(hydratePost(record), postId, record.allowSensitive);
     await getDb().update(posts).set({
       status: "pending",
       error: null,

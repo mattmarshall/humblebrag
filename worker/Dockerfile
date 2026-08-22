@@ -57,5 +57,22 @@ RUN mkdir -p ${COMFY_DIR}/models/instantid \
 # runs /handler.py, so overwriting that path swaps in our handler while keeping
 # ComfyUI's startup. Do NOT set CMD here — overriding it skips start.sh, ComfyUI
 # never launches, and the handler times out polling 127.0.0.1:8188.
+# NSFW classifier (Falconsai/nsfw_image_detection, ViT binary 0=normal/1=nsfw).
+# Baked and checksum-pinned like the other weights: RunPod applies no managed
+# content filter, and generated images are published to a public CloudFront URL.
+RUN mkdir -p /models/nsfw \
+ && wget -q -O /models/nsfw/config.json \
+      https://huggingface.co/Falconsai/nsfw_image_detection/resolve/main/config.json \
+ && wget -q -O /models/nsfw/preprocessor_config.json \
+      https://huggingface.co/Falconsai/nsfw_image_detection/resolve/main/preprocessor_config.json \
+ && wget -q -O /models/nsfw/model.safetensors \
+      https://huggingface.co/Falconsai/nsfw_image_detection/resolve/main/model.safetensors \
+ && echo "cd8c0a19566f199b5c64da402f1d6a9daf80d094fe6536befb060a2cc59449c2  /models/nsfw/config.json" > /tmp/nsfw.sha256 \
+ && echo "a34861a24e781942424ad790b82bc99348404a2e64ea882de88c40905851698d  /models/nsfw/preprocessor_config.json" >> /tmp/nsfw.sha256 \
+ && echo "97b2ce64ec146884b37f98ee7944ca4891aa72f6827dc0cb10684a1cbecd5830  /models/nsfw/model.safetensors" >> /tmp/nsfw.sha256 \
+ && sha256sum -c /tmp/nsfw.sha256 \
+ && rm /tmp/nsfw.sha256
+
 COPY handler.py /handler.py
+COPY safety.py /safety.py
 COPY workflows /workflows
