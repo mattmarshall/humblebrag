@@ -133,6 +133,30 @@ aws iam put-role-policy --role-name "$VERCEL_ROLE" --policy-name humblebrag-bedr
 JSON
 )"
 
+# 4. Vercel OIDC trust. Production is the deployed app. Development is a local
+#    `vercel dev`/`next dev` session using the short-lived token that `vercel
+#    link` writes to .env.local — needed to exercise presigning locally without
+#    deploying. Preview is deliberately NOT trusted: this repo is public, and
+#    preview deployments can be produced from pull requests.
+aws iam update-assume-role-policy --role-name "$VERCEL_ROLE" --policy-document "$(cat <<JSON
+{"Version":"2012-10-17","Statement":[
+  {"Sid":"VercelHumblebragProduction","Effect":"Allow",
+   "Principal":{"Federated":"arn:aws:iam::${ACCOUNT}:oidc-provider/oidc.vercel.com/marshio"},
+   "Action":"sts:AssumeRoleWithWebIdentity",
+   "Condition":{"StringEquals":{
+     "oidc.vercel.com/marshio:sub":"owner:marshio:project:humblebrag:environment:production",
+     "oidc.vercel.com/marshio:aud":"https://vercel.com/marshio"}}},
+  {"Sid":"VercelHumblebragDevelopment","Effect":"Allow",
+   "Principal":{"Federated":"arn:aws:iam::${ACCOUNT}:oidc-provider/oidc.vercel.com/marshio"},
+   "Action":"sts:AssumeRoleWithWebIdentity",
+   "Condition":{"StringEquals":{
+     "oidc.vercel.com/marshio:sub":"owner:marshio:project:humblebrag:environment:development",
+     "oidc.vercel.com/marshio:aud":"https://vercel.com/marshio"}}}
+]}
+JSON
+)"
+echo "OIDC trust: production + development (preview intentionally excluded)."
+
 cat <<SUMMARY
 
 Done. Put these in the humblebrag Vercel project (production):

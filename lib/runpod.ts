@@ -22,8 +22,11 @@ const MAX_SEED = 4_294_967_294;
 // straight out of the prompt. So: short descriptive phrases only, negations
 // live in the negative prompt, and nothing about preserving identity (InstantID
 // does that architecturally, and saying it just wastes prompt budget).
-const AVATAR_SUFFIX = "photorealistic portrait photograph, natural skin texture, sharp focus";
-const AVATAR_NEGATIVE = "text, words, letters, typography, caption, watermark, logo, signage, celebrity, famous person, child, malformed face, duplicated person, extra fingers, plastic skin, uncanny eyes, illustration, cartoon";
+// "facing camera, head and shoulders" counteracts the roster prompts, which say
+// "Profile portrait of..." meaning a profile *picture*. SDXL reads "profile"
+// literally and renders a side view, which is wrong for a small round avatar.
+const AVATAR_SUFFIX = "photorealistic portrait photograph, facing camera, head and shoulders, natural skin texture, sharp focus";
+const AVATAR_NEGATIVE = "side view, profile view, looking away, back of head, text, words, letters, typography, caption, watermark, logo, signage, celebrity, famous person, child, malformed face, duplicated person, extra fingers, plastic skin, uncanny eyes, illustration, cartoon";
 // "color photograph" is load-bearing: without it "candid photograph, natural
 // light" drifted to monochrome on a live run.
 const SCENE_SUFFIX = "candid color photograph, natural light, shallow depth of field";
