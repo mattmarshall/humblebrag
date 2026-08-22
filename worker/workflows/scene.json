@@ -50,7 +50,7 @@
     }
   },
   "14": {
-    "class_type": "ApplyInstantID",
+    "class_type": "ApplyInstantIDAdvanced",
     "inputs": {
       "instantid": [
         "11",
@@ -80,9 +80,10 @@
         "7",
         0
       ],
-      "weight": "$instantid_weight",
       "start_at": 0.0,
-      "end_at": "$instantid_end_at"
+      "end_at": "$instantid_end_at",
+      "ip_weight": "$instantid_ip_weight",
+      "cn_strength": "$instantid_cn_strength"
     }
   },
   "5": {

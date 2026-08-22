@@ -24,8 +24,10 @@ const MAX_SEED = 4_294_967_294;
 // does that architecturally, and saying it just wastes prompt budget).
 const AVATAR_SUFFIX = "photorealistic portrait photograph, natural skin texture, sharp focus";
 const AVATAR_NEGATIVE = "text, words, letters, typography, caption, watermark, logo, signage, celebrity, famous person, child, malformed face, duplicated person, extra fingers, plastic skin, uncanny eyes, illustration, cartoon";
-const SCENE_SUFFIX = "candid photograph, natural light, shallow depth of field";
-const SCENE_NEGATIVE = "text, words, letters, typography, caption, subtitles, poster, banner, signage, watermark, logo, celebrity, famous person, child, multiple people dominating frame, malformed face, extra fingers, plastic skin, illustration, cartoon, collage";
+// "color photograph" is load-bearing: without it "candid photograph, natural
+// light" drifted to monochrome on a live run.
+const SCENE_SUFFIX = "candid color photograph, natural light, shallow depth of field";
+const SCENE_NEGATIVE = "black and white, monochrome, greyscale, sepia, text, words, letters, typography, caption, subtitles, poster, banner, signage, watermark, logo, celebrity, famous person, child, multiple people dominating frame, malformed face, extra fingers, plastic skin, illustration, cartoon, collage";
 
 type HydratedPost = ReturnType<typeof hydratePost>;
 

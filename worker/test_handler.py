@@ -39,8 +39,9 @@ class ApplyInputsTest(unittest.TestCase):
             "width": 1216,
             "height": 832,
             "reference_image": "post-avatar.png",
-            "instantid_weight": 0.55,
-            "instantid_end_at": 0.45,
+            "instantid_ip_weight": 0.8,
+            "instantid_cn_strength": 0.25,
+            "instantid_end_at": 0.8,
         })
         self.assertEqual(filled["10"]["inputs"]["image"], "post-avatar.png")
         # The sampler must consume InstantID's conditioning, not the raw CLIP
@@ -49,11 +50,14 @@ class ApplyInputsTest(unittest.TestCase):
         self.assertEqual(filled["3"]["inputs"]["positive"], ["14", 1])
         self.assertEqual(filled["3"]["inputs"]["negative"], ["14", 2])
 
-    def test_instantid_releases_control_before_the_denoise_ends(self):
-        # If InstantID holds full strength to the end it dictates composition and
-        # the scene collapses into another headshot.
-        self.assertLess(handler.DEFAULT_INSTANTID_END_AT, 1.0)
-        self.assertLess(handler.DEFAULT_INSTANTID_WEIGHT, 0.8)
+    def test_identity_is_held_while_layout_control_is_released(self):
+        # The scene must keep the face but not inherit the reference headshot's
+        # framing. Identity rides on ip_weight; cn_strength is what pins layout,
+        # so they must not be turned down together.
+        self.assertGreaterEqual(handler.DEFAULT_INSTANTID_IP_WEIGHT, 0.7)
+        self.assertLessEqual(handler.DEFAULT_INSTANTID_CN_STRENGTH, 0.35)
+        self.assertEqual(handler.load_workflow("scene")["14"]["class_type"],
+                         "ApplyInstantIDAdvanced")
 
     def test_missing_placeholder_is_loud(self):
         with self.assertRaises(KeyError):

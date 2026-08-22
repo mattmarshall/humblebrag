@@ -45,15 +45,18 @@ RENDER_TIMEOUT = int(os.environ.get("RENDER_TIMEOUT", "300"))
 # SDXL is trained at ~1 megapixel and wants dimensions divisible by 64.
 DIMENSIONS = {"1:1": (1024, 1024), "3:2": (1216, 832)}
 
-# InstantID drives composition through facial keypoints, so holding it at full
-# strength for the whole denoise forces a face-centred portrait and the scene
-# described in the prompt never forms — the first clean run came back as a
-# second headshot instead of "speaking at a meetup". Easing off, and releasing
-# control partway, leaves the later steps free to build the scene while identity
-# is already locked in. Overridable per image so this can be tuned from the
-# payload without rebuilding the image.
-DEFAULT_INSTANTID_WEIGHT = 0.55
-DEFAULT_INSTANTID_END_AT = 0.45
+# ApplyInstantID exposes one `weight` that moves identity and layout together,
+# and derives its ControlNet keypoints from the reference headshot — so a scene
+# inherits a centred, face-filling composition no matter what the prompt says.
+# Turning that single knob down lost the face without freeing the framing: the
+# scene came back as a different man, still cropped to a headshot.
+#
+# ApplyInstantIDAdvanced splits the two. ip_weight stays high to hold identity;
+# cn_strength is the one pinning the layout, so it goes low. Both overridable
+# per image, since tuning otherwise costs a 20-minute build plus a cold start.
+DEFAULT_INSTANTID_IP_WEIGHT = 0.8
+DEFAULT_INSTANTID_CN_STRENGTH = 0.25
+DEFAULT_INSTANTID_END_AT = 0.8
 
 
 def _request(path, data=None, method=None, headers=None):
@@ -221,7 +224,8 @@ def handler(job):
                 if not reference:
                     raise RuntimeError(f"identity reference {reference_slot} was never rendered")
                 values["reference_image"] = upload_reference(reference, f"{post_id}-{reference_slot}.png")
-                values["instantid_weight"] = float(image.get("instantIdWeight", DEFAULT_INSTANTID_WEIGHT))
+                values["instantid_ip_weight"] = float(image.get("instantIdIpWeight", DEFAULT_INSTANTID_IP_WEIGHT))
+                values["instantid_cn_strength"] = float(image.get("instantIdCnStrength", DEFAULT_INSTANTID_CN_STRENGTH))
                 values["instantid_end_at"] = float(image.get("instantIdEndAt", DEFAULT_INSTANTID_END_AT))
                 graph = scene_graph
             else:
