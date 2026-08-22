@@ -33,10 +33,10 @@ RUN pip install --no-cache-dir onnxruntime-gpu
 
 # Weights are baked into the image rather than pulled at cold start: a flex
 # worker that downloads 2GB before its first render defeats the point.
-# NOTE: antelopev2 is pulled from a community mirror because insightface does not
-# publish it on a stable URL. Pin a SHA256 here before this image carries
-# production traffic — an unpinned third-party model download is a supply-chain
-# hole.
+# Every download is checksum-pinned. antelopev2 in particular comes from a
+# community mirror because insightface publishes no stable URL for it, so an
+# unpinned fetch would be a supply-chain hole. Hashes are the HuggingFace LFS
+# SHA256 (x-linked-etag) as of 2026-08-22.
 RUN mkdir -p ${COMFY_DIR}/models/instantid \
              ${COMFY_DIR}/models/controlnet/instantid \
              ${COMFY_DIR}/models/insightface/models \
@@ -46,8 +46,12 @@ RUN mkdir -p ${COMFY_DIR}/models/instantid \
       https://huggingface.co/InstantX/InstantID/resolve/main/ControlNetModel/diffusion_pytorch_model.safetensors \
  && wget -q -O /tmp/antelopev2.zip \
       https://huggingface.co/MonsterMMORPG/tools/resolve/main/antelopev2.zip \
+ && echo "02b3618e36d803784166660520098089a81388e61a93ef8002aa79a5b1c546e1  ${COMFY_DIR}/models/instantid/ip-adapter.bin" > /tmp/models.sha256 \
+ && echo "c8127be9f174101ebdafee9964d856b49b634435cf6daa396d3f593cf0bbbb05  ${COMFY_DIR}/models/controlnet/instantid/diffusion_pytorch_model.safetensors" >> /tmp/models.sha256 \
+ && echo "8e182f14fc6e80b3bfa375b33eb6cff7ee05d8ef7633e738d1c89021dcf0c5c5  /tmp/antelopev2.zip" >> /tmp/models.sha256 \
+ && sha256sum -c /tmp/models.sha256 \
  && unzip -q /tmp/antelopev2.zip -d ${COMFY_DIR}/models/insightface/models/ \
- && rm /tmp/antelopev2.zip
+ && rm /tmp/antelopev2.zip /tmp/models.sha256
 
 # start.sh (the base image's CMD) launches ComfyUI in the background and then
 # runs /handler.py, so overwriting that path swaps in our handler while keeping

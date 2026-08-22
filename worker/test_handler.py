@@ -39,6 +39,8 @@ class ApplyInputsTest(unittest.TestCase):
             "width": 1216,
             "height": 832,
             "reference_image": "post-avatar.png",
+            "instantid_weight": 0.55,
+            "instantid_end_at": 0.45,
         })
         self.assertEqual(filled["10"]["inputs"]["image"], "post-avatar.png")
         # The sampler must consume InstantID's conditioning, not the raw CLIP
@@ -46,6 +48,12 @@ class ApplyInputsTest(unittest.TestCase):
         self.assertEqual(filled["3"]["inputs"]["model"], ["14", 0])
         self.assertEqual(filled["3"]["inputs"]["positive"], ["14", 1])
         self.assertEqual(filled["3"]["inputs"]["negative"], ["14", 2])
+
+    def test_instantid_releases_control_before_the_denoise_ends(self):
+        # If InstantID holds full strength to the end it dictates composition and
+        # the scene collapses into another headshot.
+        self.assertLess(handler.DEFAULT_INSTANTID_END_AT, 1.0)
+        self.assertLess(handler.DEFAULT_INSTANTID_WEIGHT, 0.8)
 
     def test_missing_placeholder_is_loud(self):
         with self.assertRaises(KeyError):
