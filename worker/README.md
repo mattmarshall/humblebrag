@@ -49,6 +49,12 @@ signs the PUT URLs and passes them in.
 | `workflows/scene.json` | SDXL + InstantID, taking the rendered author avatar as the identity reference. |
 | `Dockerfile` | `runpod/worker-comfyui:5.8.6-sdxl` + InstantID nodes and weights. |
 
+The image deliberately sets **no `CMD`**. The base image's `CMD ["/start.sh"]`
+launches ComfyUI in the background and then runs `/handler.py`; copying our
+handler over that path swaps in our logic while keeping ComfyUI's startup.
+Setting our own `CMD` skips `start.sh`, ComfyUI never launches, and every job
+hangs until the handler's boot probe times out.
+
 Workflows are ComfyUI **API format**. Any string input written as `"$name"` is a
 placeholder the handler fills: `prompt`, `negative_prompt`, `seed`, `width`,
 `height`, and `reference_image` (scene only).

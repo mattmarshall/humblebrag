@@ -49,7 +49,9 @@ RUN mkdir -p ${COMFY_DIR}/models/instantid \
  && unzip -q /tmp/antelopev2.zip -d ${COMFY_DIR}/models/insightface/models/ \
  && rm /tmp/antelopev2.zip
 
+# start.sh (the base image's CMD) launches ComfyUI in the background and then
+# runs /handler.py, so overwriting that path swaps in our handler while keeping
+# ComfyUI's startup. Do NOT set CMD here — overriding it skips start.sh, ComfyUI
+# never launches, and the handler times out polling 127.0.0.1:8188.
 COPY handler.py /handler.py
 COPY workflows /workflows
-
-CMD ["python", "-u", "/handler.py"]
