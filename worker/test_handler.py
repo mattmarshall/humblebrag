@@ -59,6 +59,18 @@ class ApplyInputsTest(unittest.TestCase):
         self.assertEqual(handler.load_workflow("scene")["14"]["class_type"],
                          "ApplyInstantIDAdvanced")
 
+    def test_instantid_node_supplies_every_required_input(self):
+        # ComfyUI rejects the whole graph with a bare 400 when a required input
+        # is missing, which is expensive to diagnose from a live run. These are
+        # ApplyInstantIDAdvanced's required inputs.
+        required = {
+            "instantid", "insightface", "control_net", "image", "model",
+            "positive", "negative", "ip_weight", "cn_strength", "start_at",
+            "end_at", "noise", "combine_embeds",
+        }
+        supplied = set(handler.load_workflow("scene")["14"]["inputs"])
+        self.assertEqual(required - supplied, set(), "missing required inputs")
+
     def test_missing_placeholder_is_loud(self):
         with self.assertRaises(KeyError):
             handler.apply_inputs(handler.load_workflow("avatar"), {"prompt": "x"})

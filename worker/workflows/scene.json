@@ -83,7 +83,9 @@
       "start_at": 0.0,
       "end_at": "$instantid_end_at",
       "ip_weight": "$instantid_ip_weight",
-      "cn_strength": "$instantid_cn_strength"
+      "cn_strength": "$instantid_cn_strength",
+      "noise": 0.0,
+      "combine_embeds": "average"
     }
   },
   "5": {

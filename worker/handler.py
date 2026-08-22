@@ -67,8 +67,12 @@ def _request(path, data=None, method=None, headers=None):
         body = json.dumps(data).encode()
         request_headers.setdefault("Content-Type", "application/json")
     request = urllib.request.Request(url, data=body, headers=request_headers, method=method)
-    with urllib.request.urlopen(request, timeout=RENDER_TIMEOUT) as response:
-        payload = response.read()
+    try:
+        with urllib.request.urlopen(request, timeout=RENDER_TIMEOUT) as response:
+            payload = response.read()
+    except urllib.error.HTTPError as cause:
+        detail = cause.read()[:2000].decode("utf-8", "replace")
+        raise RuntimeError(f"ComfyUI {method or 'GET'} {path} failed ({cause.code}): {detail}") from cause
     return json.loads(payload) if payload else {}
 
 
