@@ -1,0 +1,70 @@
+# Builds the RunPod image worker and pushes it to GHCR.
+#
+# This runs in CI rather than locally because the image is linux/amd64 CUDA with
+# model weights baked in (~18GB), and a local arm64 build would go through QEMU.
+name: worker
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/worker.yml"]
+  pull_request:
+    paths: ["worker/**", ".github/workflows/worker.yml"]
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/humblebrag-worker
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      # ubuntu-latest ships ~14GB free, which the CUDA base plus the SDXL and
+      # InstantID weights will blow through. This reclaims ~30GB.
+      - name: Reclaim runner disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: worker
+          platforms: linux/amd64
+          # Only publish from main. PRs build to prove the Dockerfile still works.
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image reference
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "### Worker image" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
