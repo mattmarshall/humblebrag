@@ -16,7 +16,19 @@ env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/humblebrag-worker
 
 jobs:
+  # Cheap gate. The image takes ~20 minutes to build, so a malformed workflow
+  # graph should fail in seconds rather than at the end of that.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s worker -p "test_*.py" -v
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

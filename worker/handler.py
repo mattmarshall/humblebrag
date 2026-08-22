@@ -37,8 +37,6 @@ import urllib.parse
 import urllib.request
 import uuid
 
-import runpod
-
 COMFY_URL = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
 WORKFLOW_DIR = pathlib.Path(__file__).parent / "workflows"
 COMFY_BOOT_TIMEOUT = int(os.environ.get("COMFY_BOOT_TIMEOUT", "300"))
@@ -214,4 +212,7 @@ def handler(job):
     return {"postId": post_id, "uploaded": uploaded, "failed": failed}
 
 
-runpod.serverless.start({"handler": handler})
+if __name__ == "__main__":
+    import runpod
+
+    runpod.serverless.start({"handler": handler})
