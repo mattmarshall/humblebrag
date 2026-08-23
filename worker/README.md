@@ -46,7 +46,7 @@ signs the PUT URLs and passes them in.
 | --- | --- |
 | `handler.py` | Orders the renders, drives the local ComfyUI HTTP API, uploads. |
 | `workflows/avatar.json` | SDXL text-to-image. Used for the author and all three commenters. |
-| `workflows/scene.json` | SDXL + InstantID, taking the rendered author avatar as the identity reference. |
+| `workflows/scene.json` | SDXL + InstantID: identity from the author avatar, composition from a separate keypoint image. |
 | `Dockerfile` | `runpod/worker-comfyui:5.8.6-sdxl` + InstantID nodes and weights. |
 
 The image deliberately sets **no `CMD`**. The base image's `CMD ["/start.sh"]`
@@ -76,6 +76,23 @@ Then create a Serverless endpoint on that image:
 
 Put the endpoint id and an API key into the Vercel project as
 `RUNPOD_ENDPOINT_ID` and `RUNPOD_API_KEY`.
+
+## Why the scene renders twice
+
+InstantID decides *where* the face sits from its `image_kps` input. Supply none
+and it falls back to the reference headshot's own keypoints — centred and
+face-filling — so the scene comes back cropped like a portrait no matter what
+the prompt asks for. Lowering `cn_strength` softens the effect but never moves
+the frame.
+
+    pass 1   plain SDXL at scene dimensions
+             -> establishes framing; its invented face is discarded
+    pass 2   InstantID: identity from the avatar, layout from pass 1
+
+That costs roughly one extra render per post (~10s). If pass one's face is too
+small or turned away for keypoints to be extracted, InstantID errors and the
+handler falls back to the single-pass graph rather than losing the post over
+framing.
 
 ## Tuning the scene
 
