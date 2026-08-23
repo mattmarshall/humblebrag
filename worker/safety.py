@@ -33,16 +33,22 @@ _processor = None
 
 
 def _load():
+    """Load the classifier on CPU.
+
+    Deliberately not on the GPU. It is a ViT-base scoring one 1024px image at a
+    time — a few hundred milliseconds on CPU against a ~10s render — and the card
+    is already holding SDXL, the InstantID ControlNet and antelopev2 while the
+    two-pass scene keeps a layout, a reference and an output image alive at once.
+    Adding a resident model to that for no throughput gain is how a 24GB worker
+    starts crash-looping.
+    """
     global _model, _processor
     if _model is None:
-        import torch  # noqa: F401  (imported for side effects / availability)
         from transformers import AutoModelForImageClassification, ViTImageProcessor
 
         _processor = ViTImageProcessor.from_pretrained(MODEL_DIR)
         _model = AutoModelForImageClassification.from_pretrained(MODEL_DIR)
         _model.eval()
-        if torch.cuda.is_available():
-            _model.to("cuda")
     return _model, _processor
 
 
@@ -54,8 +60,6 @@ def score(image_bytes):
     model, processor = _load()
     with Image.open(BytesIO(image_bytes)) as img:
         inputs = processor(images=img.convert("RGB"), return_tensors="pt")
-    if torch.cuda.is_available():
-        inputs = {k: v.to("cuda") for k, v in inputs.items()}
     with torch.no_grad():
         logits = model(**inputs).logits
     probabilities = torch.softmax(logits, dim=-1)[0]
