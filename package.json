@@ -26,10 +26,10 @@
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "latest",
-    "@aws-sdk/client-bedrock-runtime": "latest",
+    "@aws-sdk/client-s3": "latest",
+    "@aws-sdk/s3-request-presigner": "latest",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/analytics": "latest",
-    "@vercel/blob": "^2.8.0",
     "@vercel/functions": "latest",
     "@vercel/speed-insights": "latest",
     "ai": "latest",

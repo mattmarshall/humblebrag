@@ -69,14 +69,14 @@ async function findHomepagePostForNetwork(network: "workit" | "influenzr") {
   const configuredId = process.env[`DEFAULT_${network.toUpperCase()}_POST_ID`]?.trim();
   if (configuredId) {
     const configured = await findPost(configuredId);
-    if (configured?.status === "complete" && configured.network === network) return configured;
+    if (configured?.status === "complete" && configured.network === network && !configured.sensitive) return configured;
     console.warn("[humblebrag:homepage-post] configured post unavailable", { network, configuredId });
   }
 
   const [latest] = await getDb()
     .select()
     .from(posts)
-    .where(and(eq(posts.status, "complete"), eq(posts.network, network)))
+    .where(and(eq(posts.status, "complete"), eq(posts.network, network), eq(posts.sensitive, false)))
     .orderBy(desc(posts.completedAt))
     .limit(1);
   if (!latest) return undefined;

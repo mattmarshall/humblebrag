@@ -3,6 +3,7 @@ import test from "node:test";
 import { humblebragPostSchema } from "../agent/lib/humblebrag";
 import { defaultBrag, defaultInfluenzrBrag } from "../components/HumblebragCard";
 import { hydratePost } from "../lib/posts";
+import { findMinorTerm } from "../lib/runpod";
 
 test("both network fixtures have complete, referentially valid rosters", () => {
   for (const fixture of [defaultBrag, defaultInfluenzrBrag]) {
@@ -45,4 +46,27 @@ test("legacy posts hydrate into a safe roster without losing comment names", () 
   assert.equal(post.roster[1].name, "Legacy Colleague");
   assert.equal(post.commentsPreview[0].personId, post.roster[1].id);
   assert.equal(post.avatarUrl, "https://example.com/author.jpg");
+});
+
+test("minor-adjacent prompts are rejected before anything is generated", () => {
+  // The image classifier scores sexual content and cannot estimate age, so this
+  // gate is the only control for minor-adjacent imagery.
+  const blocked = [
+    "A child accepting an award on stage",
+    "Portrait of a teenage founder",
+    "A schoolgirl at a conference",
+    "Photo of a high school student presenting",
+    "A toddler in a boardroom",
+  ];
+  for (const text of blocked) {
+    assert.ok(findMinorTerm(text), `should have been rejected: ${text}`);
+  }
+  const allowed = [
+    "Corporate headshot of a man in his 40s with greying hair",
+    "A woman in her 30s presenting at a meetup",
+    "An adult accepting an award at a business breakfast",
+  ];
+  for (const text of allowed) {
+    assert.equal(findMinorTerm(text), undefined, `should have been allowed: ${text}`);
+  }
 });

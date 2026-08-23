@@ -14,15 +14,6 @@ import {
   type RosterPerson,
 } from "./HumblebragCard";
 
-type ImageResponse = {
-  dataUrl?: string;
-  url?: string;
-  seed?: number;
-  modelId?: string;
-  region?: string;
-  error?: string;
-};
-
 type Intensity = "subtle" | "plausible" | "nuclear";
 
 type GeneratorProps = {
@@ -179,104 +170,11 @@ export function Generator({
   const [phase, setPhase] = useState<GenerationPhase | null>(null);
   const [error, setError] = useState<string>();
   const [errorStage, setErrorStage] = useState<"copy" | "avatar" | "scene">();
+  const [allowSensitive, setAllowSensitive] = useState(false);
   const inFlightNetwork = useRef<Network>(initialNetwork);
   const inFlightPersona = useRef(initialPersona);
   const autoRan = useRef(false);
   const postId = useRef<string | undefined>(undefined);
-
-  const requestImage = async (
-    kind: "avatar" | "person" | "post",
-    next: Humblebrag,
-    referenceImageDataUrl?: string,
-    person?: RosterPerson,
-    seed = next.imageSeed,
-  ) => {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const response = await fetch("/api/images", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          kind,
-          postId: postId.current,
-          personId: person?.id || (kind === "avatar" ? next.authorId : undefined),
-          network: next.network,
-          prompt: kind === "person" ? person?.avatarPrompt : kind === "avatar" ? next.avatarPrompt : next.postImagePrompt,
-          seed,
-          referenceImageDataUrl,
-        }),
-      });
-      const image = await response.json() as ImageResponse;
-      if (response.ok && image.dataUrl) return image;
-      if (response.status !== 429 || attempt === 2) {
-        throw new Error(image.error || `Image generation failed (${response.status})`);
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, 1_500 * (2 ** attempt)));
-    }
-    throw new Error("Image generation exhausted its retry budget.");
-  };
-
-  const generateImages = async (next: Humblebrag) => {
-    setDraftBrag(next);
-    try {
-      setPhase("avatar");
-      setErrorStage("avatar");
-      const avatar = await requestImage("avatar", next);
-      const avatarUrl = avatar.url || avatar.dataUrl;
-      const withAvatar = {
-        ...next,
-        avatarUrl,
-        roster: next.roster.map((person) => person.id === next.authorId ? { ...person, avatarUrl } : person),
-      };
-      setDraftBrag(withAvatar);
-
-      setPhase("scene");
-      setErrorStage("scene");
-      const commenters = withAvatar.roster.filter((person) => person.role === "commenter");
-      const [scene, firstCommenterAvatar] = await Promise.all([
-        requestImage("post", withAvatar, avatar.dataUrl),
-        commenters[0] ? requestImage("person", withAvatar, undefined, commenters[0], Math.min(4_294_967_294, withAvatar.imageSeed + 1)) : Promise.resolve(undefined),
-      ]);
-      const commenterAvatars = [firstCommenterAvatar];
-      for (let index = 1; index < commenters.length; index += 1) {
-        commenterAvatars.push(await requestImage("person", withAvatar, undefined, commenters[index], Math.min(4_294_967_294, withAvatar.imageSeed + index + 1)));
-      }
-      const commenterUrls = new Map(commenters.map((person, index) => [person.id, commenterAvatars[index]?.url || commenterAvatars[index]?.dataUrl]));
-      const finished = {
-        ...withAvatar,
-        postImageUrl: scene.url || scene.dataUrl,
-        roster: withAvatar.roster.map((person) => commenterUrls.has(person.id) ? { ...person, avatarUrl: commenterUrls.get(person.id) } : person),
-      };
-      setDraftBrag(finished);
-
-      if (postId.current) {
-        const response = await fetch(`/api/posts/${postId.current}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ status: "complete" }),
-        });
-        if (!response.ok) throw new Error("The post was generated but its permanent record could not be finalized.");
-      }
-
-      setPhase("finishing");
-      window.setTimeout(() => {
-        setBrag(finished);
-        setPreviewPostId(postId.current);
-        setDraftBrag(undefined);
-        setError(undefined);
-        setErrorStage(undefined);
-        setPhase(null);
-        if (!compact && postId.current) router.push(`/p/${postId.current}`);
-      }, 850);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Image generation failed.");
-      setPhase("error");
-      if (postId.current) void fetch(`/api/posts/${postId.current}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: "error", error: cause instanceof Error ? cause.message : "Image generation failed" }),
-      });
-    }
-  };
 
   const agent = useEveAgent({
     onError(cause) {
@@ -324,7 +222,7 @@ export function Generator({
       const response = await fetch("/api/posts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ post: next, premise: prompt.trim(), persona: inFlightPersona.current, intensity }),
+        body: JSON.stringify({ post: next, premise: prompt.trim(), persona: inFlightPersona.current, intensity, allowSensitive }),
       });
       const saved = await response.json() as { id?: string; error?: string };
       if (!response.ok || !saved.id) throw new Error(saved.error || "Could not create a permanent post record.");
@@ -475,6 +373,12 @@ export function Generator({
             </select>
           </label>
         </div>
+
+        <label className="sensitiveOptIn">
+          <input type="checkbox" checked={allowSensitive} disabled={busy}
+            onChange={(e) => setAllowSensitive(e.target.checked)} />
+          <span>Keep borderline results instead of failing. Such posts stay off the home page and out of search.</span>
+        </label>
 
         <div className="promptHints"><span>Try:</span><button type="button" disabled={busy} onClick={() => setPrompt(network === "workit" ? "A founder announcing a minor podcast appearance as if it were a Nobel Prize." : "A wellness creator receiving a free bathrobe and describing it as generational healing.")}>{network === "workit" ? "minor podcast → Nobel Prize" : "free bathrobe → healing"}</button></div>
         <button className="generateButton" disabled={busy || !prompt.trim()} type="submit">{busy ? "Agents are overachieving…" : "Generate humblebrag"}<span>↗</span></button>

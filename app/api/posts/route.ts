@@ -6,7 +6,7 @@ import { postPeople, posts } from "../../../lib/db/schema";
 import { ensureDatabase } from "../../../lib/db/ensure";
 import type { Humblebrag } from "../../../components/HumblebragCard";
 import { humblebragPostSchema, intensitySchema } from "../../../agent/lib/humblebrag";
-import { runImageJob } from "../queues/generate-images/route";
+import { enqueuePostImages } from "../../../lib/image-jobs";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,7 @@ const createPostSchema = z.object({
   premise: z.string().min(1).max(2_000),
   persona: z.string().min(1).max(100),
   intensity: intensitySchema,
+  allowSensitive: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
         persona: input.persona,
         intensity: input.intensity,
         payload: input.post as unknown as Humblebrag,
+        allowSensitive: input.allowSensitive === true,
       }),
       getDb().insert(postPeople).values(input.post.roster.map((person, position) => ({
         postId: id,
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
         ...person,
       }))),
     ]);
-    waitUntil(runImageJob(id));
+    waitUntil(enqueuePostImages(id));
     return Response.json({ id, permalink: `/p/${id}` }, { status: 201 });
   } catch (cause) {
     console.error("[humblebrag:create-post]", cause);

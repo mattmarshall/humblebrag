@@ -171,3 +171,5 @@ button{color:inherit}
   .errorActions button:first-child{background:#eceef8;border-color:#eceef8;color:#11141c}
   ::selection{background:color-mix(in srgb,var(--hb-gold) 52%,#181b23);color:#fff}
 }
+.sensitiveOptIn{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;font-size:11px;line-height:1.45;color:#6b7080}
+.sensitiveOptIn input{margin-top:1px;flex:none;accent-color:#666fff}

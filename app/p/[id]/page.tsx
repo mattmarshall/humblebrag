@@ -16,7 +16,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${post.name} is deeply humbled · humblebrag`,
     description: post.body.slice(0, 155),
-    openGraph: record.postImageUrl ? { images: [record.postImageUrl] } : undefined,
+    // A post whose images were only generated because the requester accepted a
+    // borderline result keeps its permalink, but stays out of search results and
+    // out of link previews.
+    robots: record.sensitive ? { index: false, follow: false } : undefined,
+    openGraph: record.postImageUrl && !record.sensitive ? { images: [record.postImageUrl] } : undefined,
   };
 }
 
