@@ -127,9 +127,28 @@ docker run --gpus all -p 8188:8188 -it <registry>/humblebrag-worker:0.1.0 \
 
 ## Content safety
 
-Bedrock applied managed content filtering; RunPod does not. The negative prompts
-carried over from the retired path are what enforce the parody boundaries in the
-root `README.md` — no real people, no logos, no readable brand marks. Since the
-premise text is user-supplied and reaches the prompt, **an NSFW/face-similarity
-check before upload is still outstanding** and should land before this endpoint
-takes public traffic.
+Bedrock applied managed content filtering; RunPod does not, and the premise text
+is user-supplied. Generated images are uploaded to a public CloudFront URL and
+given a shareable permalink, and the app auto-features the newest completed post
+per network — so a flagged image is published, not merely shown to whoever asked
+for it.
+
+`safety.py` classifies every image **before upload**, so flagged bytes never
+become publicly addressable:
+
+| Score | Behaviour |
+| --- | --- |
+| `< 0.55` | passes |
+| `0.55 – 0.90` | passes only with per-post consent (`allowSensitive`); the app then keeps the post off the homepage and noindexes it |
+| `>= 0.90` | never passes, consent or not |
+
+Thresholds are overridable via `NSFW_REVIEW_THRESHOLD` / `NSFW_BLOCK_THRESHOLD`.
+Job output carries `nsfwScores` per slot and a `sensitive` list.
+
+⚠️ The model (`Falconsai/nsfw_image_detection`) scores **sexual content**. It does
+**not** estimate age, so it is not the control for minor-adjacent imagery. That
+is a separate prompt-level rejection in `lib/runpod.ts`, applied before anything
+is generated and not bypassable by consent.
+
+The negative prompts still carry the parody boundaries from the root `README.md`
+— no real people, no logos, no readable brand marks.
