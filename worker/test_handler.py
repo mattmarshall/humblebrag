@@ -39,6 +39,7 @@ class ApplyInputsTest(unittest.TestCase):
             "width": 1216,
             "height": 832,
             "reference_image": "post-avatar.png",
+            "layout_image": "post-scene-kps.png",
             "instantid_ip_weight": 0.8,
             "instantid_cn_strength": 0.25,
             "instantid_end_at": 0.8,
@@ -70,6 +71,27 @@ class ApplyInputsTest(unittest.TestCase):
         }
         supplied = set(handler.load_workflow("scene")["14"]["inputs"])
         self.assertEqual(required - supplied, set(), "missing required inputs")
+
+    def test_scene_takes_layout_from_a_separate_keypoint_image(self):
+        # image_kps is what decides where the face sits. Without it InstantID
+        # reuses the reference headshot's keypoints and the scene comes back
+        # cropped like a portrait instead of showing the environment.
+        graph = handler.load_workflow("scene")
+        self.assertIn("image_kps", graph["14"]["inputs"])
+        kps_node = graph["14"]["inputs"]["image_kps"][0]
+        self.assertEqual(graph[kps_node]["class_type"], "LoadImage")
+        self.assertNotEqual(kps_node, graph["14"]["inputs"]["image"][0],
+                            "identity and layout must come from different images")
+
+    def test_fallback_graph_drops_the_keypoint_wiring_cleanly(self):
+        import copy as _copy
+        graph = _copy.deepcopy(handler.load_workflow("scene"))
+        graph["14"]["inputs"].pop("image_kps", None)
+        graph.pop("15", None)
+        for node_id, node in graph.items():
+            for value in node["inputs"].values():
+                if isinstance(value, list) and value and isinstance(value[0], str):
+                    self.assertIn(value[0], graph, f"dangling ref {node_id} -> {value[0]}")
 
     def test_missing_placeholder_is_loud(self):
         with self.assertRaises(KeyError):

@@ -85,7 +85,11 @@
       "ip_weight": "$instantid_ip_weight",
       "cn_strength": "$instantid_cn_strength",
       "noise": 0.0,
-      "combine_embeds": "average"
+      "combine_embeds": "average",
+      "image_kps": [
+        "15",
+        0
+      ]
     }
   },
   "5": {
@@ -144,6 +148,12 @@
         0
       ],
       "filename_prefix": "humblebrag"
+    }
+  },
+  "15": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "$layout_image"
     }
   }
 }

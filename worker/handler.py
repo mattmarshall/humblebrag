@@ -204,6 +204,9 @@ def handler(job):
     wait_for_comfy()
     avatar_graph = load_workflow("avatar")
     scene_graph = load_workflow("scene")
+    scene_graph_nokps = copy.deepcopy(scene_graph)
+    scene_graph_nokps["14"]["inputs"].pop("image_kps", None)
+    scene_graph_nokps.pop("15", None)
 
     allow_sensitive = bool(payload.get("allowSensitive"))
     uploaded = []
@@ -232,15 +235,33 @@ def handler(job):
                 reference = rendered.get(reference_slot)
                 if not reference:
                     raise RuntimeError(f"identity reference {reference_slot} was never rendered")
+
+                # Pass 1: the scene with plain SDXL. InstantID takes its
+                # composition from image_kps, so this establishes the framing —
+                # a wide shot, the subject placed in an environment — while the
+                # face it invents is thrown away. Without this, InstantID falls
+                # back to the reference headshot's keypoints and every scene
+                # comes back cropped like a portrait.
+                layout = render(apply_inputs(avatar_graph, values))
+                values["layout_image"] = upload_reference(layout, f"{post_id}-{slot.replace(':', '-')}-kps.png")
                 values["reference_image"] = upload_reference(reference, f"{post_id}-{reference_slot}.png")
                 values["instantid_ip_weight"] = float(image.get("instantIdIpWeight", DEFAULT_INSTANTID_IP_WEIGHT))
                 values["instantid_cn_strength"] = float(image.get("instantIdCnStrength", DEFAULT_INSTANTID_CN_STRENGTH))
                 values["instantid_end_at"] = float(image.get("instantIdEndAt", DEFAULT_INSTANTID_END_AT))
-                graph = scene_graph
-            else:
-                graph = avatar_graph
 
-            image_bytes = render(apply_inputs(graph, values))
+                # Pass 2: identity from the avatar, layout from pass 1. If the
+                # invented face is too small or turned away for keypoints to be
+                # found, InstantID errors — fall back to the single-pass graph
+                # rather than losing the whole post over framing.
+                try:
+                    image_bytes = render(apply_inputs(scene_graph, values))
+                except Exception as cause:  # noqa: BLE001
+                    print(f"[humblebrag:worker] kps pass failed for {slot}, "
+                          f"falling back to single-pass: {cause}", flush=True)
+                    single = {k: v for k, v in values.items() if k != "layout_image"}
+                    image_bytes = render(apply_inputs(scene_graph_nokps, single))
+            else:
+                image_bytes = render(apply_inputs(avatar_graph, values))
 
             # Classify before upload: a flagged image that reaches S3 is already
             # publicly addressable on a guessable CloudFront path.
