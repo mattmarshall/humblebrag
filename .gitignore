@@ -18,6 +18,10 @@ out/
 AGENTS.md
 CLAUDE.md
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
