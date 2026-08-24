@@ -29,12 +29,20 @@ def is_configured():
 
 
 def generate(prompt, negative_prompt="", aspect_ratio="1:1", seed=0):
-    """Return JPEG bytes, or raise StabilityUnavailable."""
-    import requests
+    """Return JPEG bytes, or raise StabilityUnavailable.
 
+    Every failure path must raise StabilityUnavailable, because that is the type
+    the handler catches to fall back to a local render. Anything else escapes the
+    fallback and fails the whole post.
+    """
     key = os.environ.get("STABILITY_API_KEY", "").strip()
     if not key:
         raise StabilityUnavailable("STABILITY_API_KEY is not set")
+
+    try:
+        import requests
+    except ImportError as cause:
+        raise StabilityUnavailable(f"requests is unavailable: {cause}") from cause
 
     fields = {
         "prompt": (None, prompt),

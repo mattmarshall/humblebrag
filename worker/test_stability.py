@@ -21,6 +21,34 @@ class ConfigTest(unittest.TestCase):
             if saved is not None:
                 os.environ["STABILITY_API_KEY"] = saved
 
+    def test_a_missing_dependency_still_raises_the_recoverable_type(self):
+        # Caught in CI: `import requests` ran before the key check, so an
+        # environment without it raised ModuleNotFoundError, which the handler's
+        # fallback does not match — a missing key would have failed the post.
+        import os
+        saved = os.environ.get("STABILITY_API_KEY")
+        os.environ["STABILITY_API_KEY"] = "sk-not-a-real-key"
+        try:
+            import builtins
+            real_import = builtins.__import__
+
+            def no_requests(name, *args, **kwargs):
+                if name == "requests":
+                    raise ImportError("simulated missing dependency")
+                return real_import(name, *args, **kwargs)
+
+            builtins.__import__ = no_requests
+            try:
+                with self.assertRaises(stability.StabilityUnavailable):
+                    stability.generate("a prompt")
+            finally:
+                builtins.__import__ = real_import
+        finally:
+            if saved is None:
+                os.environ.pop("STABILITY_API_KEY", None)
+            else:
+                os.environ["STABILITY_API_KEY"] = saved
+
     def test_failures_are_a_recoverable_type(self):
         # The handler catches this specific class to fall back to ComfyUI. If it
         # became a bare RuntimeError the fallback would stop matching and an
