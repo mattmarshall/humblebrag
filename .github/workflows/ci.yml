@@ -1,0 +1,25 @@
+# The worker had tests in CI from the start; the Next app did not. This runs the
+# same checks a change to app code can break.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # Catches route/config breakage that typecheck alone misses. No secrets
+      # needed: the database client is constructed lazily at request time.
+      - run: npm run build

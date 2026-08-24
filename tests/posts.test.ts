@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { humblebragPostSchema } from "../agent/lib/humblebrag";
+import { humblebragPostSchema, rosterPersonSchema } from "../agent/lib/humblebrag";
 import { defaultBrag, defaultInfluenzrBrag } from "../components/HumblebragCard";
 import { hydratePost } from "../lib/posts";
 import { findMinorTerm } from "../lib/runpod";
@@ -69,4 +69,21 @@ test("minor-adjacent prompts are rejected before anything is generated", () => {
   for (const text of allowed) {
     assert.equal(findMinorTerm(text), undefined, `should have been allowed: ${text}`);
   }
+});
+
+test("a whole sentence of post copy is rejected as a title", () => {
+  // One live post carries a 169-character 'title' that is really body text, which
+  // renders as the card subtitle. Bound it at the schema so it cannot recur.
+  const person = {
+    id: "author-1", role: "author" as const, name: "A", handle: "a",
+    company: "C", appearance: "adult", avatarPrompt: "portrait",
+  };
+  assert.ok(rosterPersonSchema.safeParse({ ...person, title: "Vice President of Strategic Leadership Initiatives" }).success);
+  assert.equal(
+    rosterPersonSchema.safeParse({
+      ...person,
+      title: "Sometimes, you need to step away to find your way back. Grateful for this unexpected escape to reconnect with what truly matters. Here's to authenticity and healing.",
+    }).success,
+    false,
+  );
 });

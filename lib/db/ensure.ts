@@ -51,6 +51,13 @@ export function ensureDatabase() {
       )
     `);
     await getDb().execute(sql`
+      CREATE TABLE IF NOT EXISTS "rate_limits" (
+        "key" text PRIMARY KEY NOT NULL,
+        "window_start" timestamp with time zone DEFAULT now() NOT NULL,
+        "count" integer DEFAULT 0 NOT NULL
+      )
+    `);
+    await getDb().execute(sql`
       CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
       ON "post_people" USING btree ("post_id", "position")
     `);

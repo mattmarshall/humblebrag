@@ -12,7 +12,9 @@ export const rosterPersonSchema = z.object({
   role: z.enum(["author", "commenter"]),
   name: z.string().min(1),
   handle: z.string().min(1),
-  title: z.string().min(1),
+  // Bounded: the writer subagents occasionally return a whole sentence of post
+  // copy here instead of a job title, which then renders as the card subtitle.
+  title: z.string().min(1).max(80),
   company: z.string().min(1),
   appearance: z.string().min(1),
   avatarPrompt: z.string().min(1),
@@ -27,7 +29,7 @@ export const personaSchema = z.object({
   personaId: z.string().min(1),
   name: z.string().min(1),
   handle: z.string().min(1),
-  title: z.string().min(1),
+  title: z.string().min(1).max(80),
   company: z.string().min(1),
   appearance: z.string().min(1),
 });

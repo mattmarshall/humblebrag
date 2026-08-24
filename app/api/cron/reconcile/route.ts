@@ -11,7 +11,18 @@ export const runtime = "nodejs";
 // and webhooks on completion, so this only has to catch the rare case where a
 // webhook was lost or a job was submitted with presigned URLs that expired
 // before a worker picked it up (they are STS-signed and live ~1h).
-export async function GET() {
+/**
+ * Guarded because this is a public URL that submits RunPod jobs.
+ *
+ * Vercel adds `Authorization: Bearer $CRON_SECRET` to its own cron requests
+ * when that variable is set, so the same check covers both Vercel's scheduler
+ * and the GitHub Actions one that runs it more often than a Hobby plan allows.
+ */
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET?.trim();
+  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
   await ensureDatabase();
   const stale = await getDb().select().from(posts)
     .where(and(eq(posts.status, "pending"), lte(posts.imageNextAttemptAt, new Date())))

@@ -9,6 +9,7 @@ import type { Humblebrag } from "../../../components/HumblebragCard";
 import { humblebragPostSchema, intensitySchema } from "../../../agent/lib/humblebrag";
 import { enqueuePostImages } from "../../../lib/image-jobs";
 import { hydratePost, publiclyListable } from "../../../lib/posts";
+import { checkRateLimit, clientKey, rateLimited } from "../../../lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -95,8 +96,16 @@ export async function GET(request: Request) {
   }
 }
 
+// Six GPU renders per accepted request, on a public unauthenticated endpoint.
+const CREATE_LIMIT = 5;
+const CREATE_WINDOW_SECONDS = 60 * 60;
+
 export async function POST(request: Request) {
   try {
+    await ensureDatabase();
+    const limit = await checkRateLimit(clientKey(request, "create"), CREATE_LIMIT, CREATE_WINDOW_SECONDS);
+    if (!limit.allowed) return rateLimited(limit);
+
     const input = createPostSchema.parse(await request.json());
     const peopleById = new Map(input.post.roster.map((person) => [person.id, person]));
     if (peopleById.size !== input.post.roster.length) throw new Error("Roster IDs must be unique");
