@@ -16,7 +16,7 @@ export default async function Home() {
     influenzr: records.influenzr?.id,
   };
   return <main className="siteShell">
-    <header className="siteNav"><Link className="brand" href="/" aria-label="Humblebrag home"><Brand compact priority /></Link><span className="navAside">bragging rights. humbly.</span></header>
+    <header className="siteNav"><Link className="brand" href="/" aria-label="Humblebrag home"><Brand compact priority /></Link><Link className="navAside" href="/gallery">the archive ↗</Link></header>
     <section className="intro">
       <div><span className="eyebrow">Professional and lifestyle self-importance, automated.</span><h1>Make something<br/><em>deeply postable.</em></h1></div>
       <p>Choose your fake network. Turn an ordinary accomplishment into a breathtaking display of strategic humility or curated authenticity—complete with a fictional persona, admirers, and suspiciously polished photography.</p>

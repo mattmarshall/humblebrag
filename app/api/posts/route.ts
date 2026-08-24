@@ -1,3 +1,4 @@
+import { and, desc, eq, lt, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { waitUntil } from "@vercel/functions";
 import { z } from "zod";
@@ -7,6 +8,7 @@ import { ensureDatabase } from "../../../lib/db/ensure";
 import type { Humblebrag } from "../../../components/HumblebragCard";
 import { humblebragPostSchema, intensitySchema } from "../../../agent/lib/humblebrag";
 import { enqueuePostImages } from "../../../lib/image-jobs";
+import { hydratePost, publiclyListable } from "../../../lib/posts";
 
 export const runtime = "nodejs";
 
@@ -17,6 +19,81 @@ const createPostSchema = z.object({
   intensity: intensitySchema,
   allowSensitive: z.boolean().optional(),
 });
+
+
+export const GALLERY_PAGE_SIZE = 24;
+
+/**
+ * Public gallery listing.
+ *
+ * Two filters are load-bearing, not incidental:
+ *  - status complete, so half-generated posts never appear
+ *  - NOT sensitive, mirroring findHomepagePostForNetwork. A post whose images
+ *    were only produced because the requester accepted a borderline result is
+ *    kept off the homepage and noindexed on its permalink; listing it here
+ *    would undo both.
+ *
+ * Keyset pagination on (completedAt, id) rather than OFFSET, so a post
+ * completing mid-scroll cannot shift rows and cause skips or repeats.
+ */
+export async function GET(request: Request) {
+  try {
+    await ensureDatabase();
+    const url = new URL(request.url);
+    const limit = Math.min(
+      Math.max(Number(url.searchParams.get("limit")) || GALLERY_PAGE_SIZE, 1),
+      48,
+    );
+
+    let cursorFilter;
+    const cursor = url.searchParams.get("cursor");
+    if (cursor) {
+      const [at, id] = Buffer.from(cursor, "base64url").toString().split("|");
+      const completedAt = new Date(at);
+      if (!id || Number.isNaN(completedAt.getTime())) {
+        return Response.json({ error: "Invalid cursor" }, { status: 400 });
+      }
+      cursorFilter = or(
+        lt(posts.completedAt, completedAt),
+        and(eq(posts.completedAt, completedAt), lt(posts.id, id)),
+      );
+    }
+
+    const rows = await getDb().select().from(posts)
+      .where(and(publiclyListable(), cursorFilter))
+      .orderBy(desc(posts.completedAt), desc(posts.id))
+      .limit(limit + 1);
+
+    const page = rows.slice(0, limit);
+    const last = page.at(-1);
+    const nextCursor = rows.length > limit && last?.completedAt
+      ? Buffer.from(`${last.completedAt.toISOString()}|${last.id}`).toString("base64url")
+      : null;
+
+    return Response.json({
+      posts: page.map((record) => {
+        const post = hydratePost(record);
+        return {
+          id: record.id,
+          permalink: `/p/${record.id}`,
+          network: record.network,
+          name: post.name,
+          handle: post.handle,
+          title: post.title,
+          company: post.company,
+          body: post.body,
+          avatarUrl: post.avatarUrl,
+          postImageUrl: post.postImageUrl,
+          completedAt: record.completedAt,
+        };
+      }),
+      nextCursor,
+    });
+  } catch (cause) {
+    console.error("[humblebrag:gallery]", cause);
+    return Response.json({ error: "Could not list posts" }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {
