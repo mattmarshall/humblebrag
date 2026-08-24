@@ -37,6 +37,15 @@ type HydratedPost = ReturnType<typeof hydratePost>;
 export type ImageRequest = {
   slot: ImageSlot;
   kind: "avatar" | "scene";
+  /**
+   * Which renderer produces this image. The author avatar goes to Stable Image
+   * Ultra: it is the profile picture in the card and the identity reference the
+   * scene is built from, so it is the one slot where the quality difference is
+   * worth the cost. Everything else renders locally on the GPU — commenter
+   * avatars appear at roughly 40px, and Ultra cannot compose the wide scene
+   * because its image-to-image holds identity only by staying near its source.
+   */
+  engine?: "comfy" | "stability";
   prompt: string;
   negativePrompt: string;
   aspectRatio: "1:1" | "3:2";
@@ -98,6 +107,7 @@ export async function buildJobInput(post: HydratedPost, postId: string) {
       build: (uploadUrl) => ({
         slot: "avatar",
         kind: "avatar",
+        engine: "stability",
         prompt: `${post.avatarPrompt} ${AVATAR_SUFFIX}`,
         negativePrompt: AVATAR_NEGATIVE,
         aspectRatio: "1:1",

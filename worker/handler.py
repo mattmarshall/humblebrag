@@ -38,6 +38,7 @@ import urllib.request
 import uuid
 
 import safety
+import stability
 
 COMFY_URL = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
 WORKFLOW_DIR = pathlib.Path(__file__).parent / "workflows"
@@ -166,7 +167,14 @@ def render(graph):
 def to_jpeg(image_bytes, quality=88):
     """ComfyUI's SaveImage emits PNG. The keys, the signed Content-Type and the
     rest of the app all say JPEG, and a 1.3MB PNG per image means ~6.5MB of
-    card for one post, so transcode before upload rather than mislabel."""
+    card for one post, so transcode before upload rather than mislabel.
+
+    Stability returns JPEG already; re-encoding it would only lose quality.
+    """
+    # Checked before importing PIL: a passthrough should not need it.
+    if image_bytes[:3] == b"\xff\xd8\xff":
+        return image_bytes
+
     from io import BytesIO
 
     from PIL import Image
@@ -213,6 +221,7 @@ def handler(job):
     failed = []
     sensitive = []
     scores = {}
+    engines = {}
     rendered = {}
 
     # Render avatars first so an identity reference exists before the scene runs.
@@ -229,6 +238,38 @@ def handler(job):
                 "width": width,
                 "height": height,
             }
+
+            # Ultra for slots that ask for it, falling back to a local render
+            # rather than losing the post if Stability is down or out of credit.
+            engine = image.get("engine", "comfy")
+            if engine == "stability" and not image.get("identityFrom"):
+                try:
+                    image_bytes = stability.generate(
+                        prompt=image["prompt"],
+                        negative_prompt=image.get("negativePrompt", ""),
+                        aspect_ratio=image.get("aspectRatio", "1:1"),
+                        seed=int(image["seed"]),
+                    )
+                    engines[slot] = "stability"
+                except stability.StabilityUnavailable as cause:
+                    print(f"[humblebrag:worker] stability unavailable for {slot}, "
+                          f"rendering locally: {cause}", flush=True)
+                    image_bytes = render(apply_inputs(avatar_graph, values))
+                    engines[slot] = "comfy-fallback"
+                allowed, nsfw_score, reason = safety.verdict(image_bytes, allow_sensitive)
+                scores[slot] = round(nsfw_score, 4)
+                if not allowed:
+                    print(f"[humblebrag:worker] BLOCKED {post_id} {slot}: {reason}", flush=True)
+                    failed.append({"slot": slot, "error": reason, "nsfwScore": round(nsfw_score, 4)})
+                    continue
+                if reason:
+                    sensitive.append(slot)
+                rendered[slot] = image_bytes
+                upload(image["uploadUrl"], to_jpeg(image_bytes))
+                uploaded.append(slot)
+                print(f"[humblebrag:worker] rendered {post_id} {slot} "
+                      f"via {engines[slot]} nsfw={nsfw_score:.3f}", flush=True)
+                continue
 
             reference_slot = image.get("identityFrom")
             if reference_slot:
@@ -285,7 +326,7 @@ def handler(job):
             failed.append({"slot": slot, "error": str(cause)})
 
     return {"postId": post_id, "uploaded": uploaded, "failed": failed,
-            "sensitive": sensitive, "nsfwScores": scores}
+            "sensitive": sensitive, "nsfwScores": scores, "engines": engines}
 
 
 if __name__ == "__main__":
