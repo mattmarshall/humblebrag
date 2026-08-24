@@ -68,9 +68,18 @@ docker push <registry>/humblebrag-worker:0.1.0
 
 Then create a Serverless endpoint on that image:
 
-- GPU: **RTX 4090 (24 GB)** — SDXL + InstantID fits comfortably, ~4 s/image.
+- GPU pools: `ADA_24`, `AMPERE_24`, `AMPERE_48`, `ADA_48_PRO`, `ADA_32_PRO`.
+  Any 24 GB+ card works. Pinning to a single pool caused ~25 minutes of
+  throttled scheduling; breadth matters more than picking the fastest card.
 - Workers: min 0, max 3. Enable **FlashBoot**.
-- Container disk: 30 GB (the weights are baked in).
+- Container disk: **70 GB**. Not optional — the image is ~24 GB compressed
+  across 36 layers and extracts to roughly 38–48 GB. At the 40 GB it was
+  originally given, extraction sometimes just fit and sometimes did not, so a
+  fraction of workers came up UNHEALTHY and crash-looped: the container exits
+  before `start.sh` emits anything, so there are no container logs and the only
+  signature is repeated `start container: begin` lines in the *system* log. Jobs
+  then sit IN_QUEUE indefinitely, which reads like a capacity shortage and is
+  not one.
 - Execution timeout: 600 s. A five-image post is ~40–60 s warm.
 - No environment variables are required; everything arrives in the job payload.
 
