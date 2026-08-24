@@ -19,8 +19,12 @@ export const runtime = "nodejs";
  * and the GitHub Actions one that runs it more often than a Hobby plan allows.
  */
 export async function GET(request: Request) {
+  // Fails closed. An unset CRON_SECRET rejects rather than waving requests
+  // through: a sweep that stops running is a delay, while an unguarded public
+  // endpoint that submits GPU jobs is a bill.
   const secret = process.env.CRON_SECRET?.trim();
-  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+    if (!secret) console.error("[humblebrag:reconcile] CRON_SECRET is not configured; refusing to run");
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   await ensureDatabase();
