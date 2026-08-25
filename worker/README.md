@@ -72,6 +72,17 @@ Then create a Serverless endpoint on that image:
   Any 24 GB+ card works. Pinning to a single pool caused ~25 minutes of
   throttled scheduling; breadth matters more than picking the fastest card.
 - Workers: min 0, max 3. Enable **FlashBoot**.
+- **CUDA: `minCudaVersion` 12.6, `allowedCudaVersions` 12.6+.** Not optional and
+  easy to misdiagnose. The base image requires CUDA >= 12.6, and RunPod defaults
+  the endpoint floor to 12.0, so workers get scheduled onto hosts whose drivers
+  cannot run the container at all. It dies in the OCI runtime prestart hook —
+  before `start.sh`, before any process — so there are **no container logs**,
+  only `error starting container ... nvidia-container-cli: requirement error:
+  unsatisfied condition: cuda>=12.6` in the *system* log. Workers show as
+  UNHEALTHY or sit apparently idle while jobs stay IN_QUEUE, which reads like a
+  capacity shortage or an out-of-memory crash. It is neither: it is a host the
+  scheduler should never have picked.
+
 - Container disk: **70 GB**. Not optional — the image is ~24 GB compressed
   across 36 layers and extracts to roughly 38–48 GB. At the 40 GB it was
   originally given, extraction sometimes just fit and sometimes did not, so a
