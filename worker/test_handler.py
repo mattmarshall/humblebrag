@@ -105,6 +105,28 @@ class ApplyInputsTest(unittest.TestCase):
         self.assertEqual(graph["6"]["inputs"]["text"], "$prompt")
 
 
+class ImagePackagingTest(unittest.TestCase):
+    def test_every_local_module_handler_imports_is_copied_into_the_image(self):
+        """A missing COPY is invisible to the rest of the suite.
+
+        Tests import these modules from the repo, where they exist, so the
+        omission only appears at runtime as a crash-looping worker with
+        ModuleNotFoundError. handler.py imported `stability` for a full build
+        and deploy cycle before anyone noticed.
+        """
+        import re
+        here = pathlib.Path(__file__).parent
+        source = (here / "handler.py").read_text()
+        local = {
+            name for name in re.findall(r"^import (\w+)", source, re.M)
+            if (here / f"{name}.py").exists()
+        }
+        dockerfile = (here / "Dockerfile").read_text()
+        copied = set(re.findall(r"^COPY (\w+)\.py", dockerfile, re.M))
+        self.assertEqual(local - copied, set(),
+                         "handler.py imports a local module the Dockerfile never copies")
+
+
 class RenderOrderTest(unittest.TestCase):
     def test_scene_renders_after_the_avatar_it_references(self):
         images = [

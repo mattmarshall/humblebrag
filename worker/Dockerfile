@@ -75,4 +75,11 @@ RUN mkdir -p /models/nsfw \
 
 COPY handler.py /handler.py
 COPY safety.py /safety.py
+COPY stability.py /stability.py
 COPY workflows /workflows
+
+# Import the handler at build time. Its modules are copied individually, so a
+# missing COPY is invisible to the test suite — which imports them from the
+# repo, where they exist — and only shows up as a crash-looping worker with
+# ModuleNotFoundError at runtime. This turns that into a build failure.
+RUN python -c "import sys; sys.path.insert(0, '/'); import handler; print('handler imports OK')"
