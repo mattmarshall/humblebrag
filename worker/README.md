@@ -114,6 +114,36 @@ small or turned away for keypoints to be extracted, InstantID errors and the
 handler falls back to the single-pass graph rather than losing the post over
 framing.
 
+## Why the image is ~24GB, and why that is hard to change
+
+Measured from the registry manifest, compressed:
+
+| Component | Size | Source |
+| --- | --- | --- |
+| PyTorch + CUDA stack | ~11.3 GB | base |
+| SDXL checkpoint | 6.94 GB | base |
+| InstantID weights | 4.23 GB | ours |
+| Standalone VAEs (**unused**) | 0.67 GB | base |
+| NSFW classifier | 0.32 GB | ours |
+| build-essential | 0.10 GB | ours, build-time only |
+
+Both workflows take their VAE from `CheckpointLoaderSimple`, never a
+`VAELoader`, so the two standalone VAE files are dead weight — as is
+`build-essential` once insightface has compiled. Neither can simply be deleted:
+Docker layers are additive, so an `rm` in a later layer leaves the bytes in the
+earlier one. Reclaiming them needs a multi-stage build that copies selectively
+into a fresh base, which is a real refactor to recover about 3%.
+
+Everything else is irreducible while the weights ship inside the image. The only
+structural fix is a RunPod network volume holding SDXL and InstantID, which
+would roughly halve the image — at the cost of pinning the endpoint to a single
+datacenter. That trade has not been taken: workers currently place across five
+datacenters, and `minCudaVersion` already narrows scheduling.
+
+Until then the mitigation is operational: **cap `workersMax` during a rollout**.
+Five workers pulling this image concurrently into one datacenter stalled for 23
+minutes with no progress; a single worker pulled it cleanly.
+
 ## Tuning the scene
 
 Identity and composition pull against each other, and they are controlled
