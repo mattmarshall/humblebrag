@@ -11,7 +11,9 @@ resumarsh account, while leaving every viral surface wide open.
 2. **Gate scope:** **creator artifacts only.** Copy-link, PNG download, social
    intent buttons, embed snippet and byline require sign-in. `/p/[id]` permalinks
    and their OG images stay fully public.
-3. This document is a specification. No product code has been written for it.
+3. **Phases 1–3 are implemented** (see the rollout in §10). The gate ships
+   switched off: `HUMBLEBRAG_GATE=off` until the experiment is deliberately
+   started, and rolling it back is that variable rather than a revert.
 
 ---
 
@@ -89,6 +91,11 @@ and the funnel has no input.
 - `opengraph-image` for those permalinks — must render for LinkedIn's, X's and
   Slack's unauthenticated crawlers, or shares look broken
 - `/embed` and `embed.js` — third-party sites are paid distribution; never gate them
+- **The embed snippet in the generator.** An earlier draft of this document
+  listed it as a gated creator artifact, which contradicted the line above: the
+  snippet is a generic loader keyed on network, persona and prompt, it contains
+  nothing the creator owns, and every use of it is distribution we want. It
+  stays free.
 
 ### What the gate covers
 
@@ -99,7 +106,6 @@ Only actions taken by the *creator* to push their own brag outward or keep it:
 | Copy share link (`components/ShareLink.tsx`) | free | **sign in** |
 | Download the card as PNG | doesn't exist | **sign in** |
 | Post to X / LinkedIn (intent buttons) | doesn't exist | **sign in** |
-| Copy the embed snippet for *your* brag | free in `Generator` | **sign in** |
 | Byline on the permalink (`by @handle` → resumarsh profile) | doesn't exist | **sign in** |
 | `/me` — every brag you've made | doesn't exist | **sign in** |
 | Guarantee the brag is never garbage-collected | implicit | **sign in** |
@@ -244,7 +250,7 @@ people visit twice a year — a reason to be shared at all.
 | `app/api/posts/[id]/card.png/route.ts` *(new)* | Same renderer, `content-disposition: attachment`, **session required** |
 | `app/me/page.tsx` *(new)* | The brag shelf. Signed-in only; the retention hook and the second CTA placement |
 | `components/PlugFooter.tsx` *(new)* | One line on `/`, `/p/*` and inside `/embed`: *"humblebrag makes the fake one. [resumarsh](https://resumarsh.com) makes the real one."* The embed placement is free distribution on other people's sites |
-| `components/Generator.tsx` | Embed-snippet copy button routes through `<ShareGate>`; on completion, if signed out, show the CTA card rather than a bare permalink push (`components/Generator.tsx:365`) |
+| `components/Generator.tsx` | **Unchanged.** A completed generation already pushes to `/p/<id>` (`:365`), which is now the page carrying the gate, the byline and the antidote CTA — a second bespoke CTA card in the generator would duplicate it |
 
 resumarsh-side changes live in that repo's `docs/humblebrag-funnel.md`.
 
@@ -340,21 +346,23 @@ which is both truer and less resented.
 
 ## 10. Rollout
 
-**Phase 1 — plug, no gate (½ day).** `PlugFooter` on `/`, `/p/*` and `/embed`;
+**Phase 1 — plug, no gate. ✅ Shipped.** `PlugFooter` on `/`, `/p/*` and `/embed`;
 resumarsh's landing line becomes a link; permalink footer copy. Zero risk, starts
 producing the baseline for §7, and puts a backlink on every embed.
 
-**Phase 2 — identity (1 day).** WorkOS auth, `hb_creator` cookie, claim route,
+**Phase 2 — identity. ✅ Shipped.** WorkOS auth, `hb_creator` cookie, claim route,
 schema and migration. Sign-in optional, no gate yet. Measure how many people claim
 voluntarily — that is the ceiling the gate is pushing against.
 
-**Phase 3 — the gate (2 days), as a 50/50 experiment.** Half of new sessions get
+**Phase 3 — the gate, as a 50/50 experiment. ✅ Shipped, switched off.** Start it with `HUMBLEBRAG_GATE=experiment`. Half of new sessions get
 gated sharing, half keep it free. Run two weeks. Compare share-intent → account
 against generations-per-share. Ship the gate if accounts rise more than reach
 falls, and keep the holdout running for a month either way.
 
-**Phase 4 — the bridge (2–3 days).** `ref`/`premise` deep link, `/start` tailoring,
-the interstitial, `/me` shelf, PNG card.
+**Phase 4 — the bridge (1–2 days).** The interstitial, the `/me` shelf and the PNG
+card shipped with Phase 2; what remains is the resumarsh end of the deep link —
+`/start` reading `ref`/`brag`/`premise`, the tailored hero, and the `rsm_ref`
+cookie. **The privacy note must be updated before the gate is switched on.**
 
 **Phase 5 — the loop (ongoing).** Reverse-funnel button in `/admin`, the
 split-screen card, rate limits as a sign-in perk.

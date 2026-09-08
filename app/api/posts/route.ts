@@ -1,6 +1,9 @@
 import { nanoid } from "nanoid";
+import { cookies } from "next/headers";
 import { waitUntil } from "@vercel/functions";
 import { z } from "zod";
+import { CREATOR_COOKIE, CREATOR_COOKIE_MAX_AGE_SECONDS, withCreatorId } from "../../../lib/claim";
+import { getSession } from "../../../lib/session";
 import { getDb } from "../../../lib/db";
 import { postPeople, posts } from "../../../lib/db/schema";
 import { ensureDatabase } from "../../../lib/db/ensure";
@@ -29,6 +32,8 @@ export async function POST(request: Request) {
     }
     await ensureDatabase();
     const id = nanoid(12);
+    // Already signed in? Then there is nothing to claim later — own it now.
+    const session = await getSession();
     await getDb().batch([
       getDb().insert(posts).values({
         id,
@@ -37,6 +42,8 @@ export async function POST(request: Request) {
         persona: input.persona,
         intensity: input.intensity,
         payload: input.post as unknown as Humblebrag,
+        ownerUserId: session?.userId ?? null,
+        claimedAt: session ? new Date() : null,
       }),
       getDb().insert(postPeople).values(input.post.roster.map((person, position) => ({
         postId: id,
@@ -44,8 +51,20 @@ export async function POST(request: Request) {
         ...person,
       }))),
     ]);
+    // Proof of authorship for a later claim: this browser made this post. It is
+    // httpOnly because it is the only thing standing between a public permalink
+    // and a stranger putting their byline on it.
+    const jar = await cookies();
+    jar.set(CREATOR_COOKIE, withCreatorId(jar.get(CREATOR_COOKIE)?.value, id), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: CREATOR_COOKIE_MAX_AGE_SECONDS,
+      secure: new URL(request.url).protocol === "https:",
+    });
+
     waitUntil(runImageJob(id));
-    return Response.json({ id, permalink: `/p/${id}` }, { status: 201 });
+    return Response.json({ id, permalink: `/p/${id}`, claimed: Boolean(session) }, { status: 201 });
   } catch (cause) {
     console.error("[humblebrag:create-post]", cause);
     return Response.json({ error: cause instanceof Error ? cause.message : "Could not save post" }, { status: 400 });

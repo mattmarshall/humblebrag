@@ -57,6 +57,17 @@ export function hydratePost(record: StoredPostWithPeople) {
   };
 }
 
+/** Everything one person has claimed — the brag shelf behind /me. */
+export async function findPostsByOwner(userId: string, limit = 60) {
+  await ensureDatabase();
+  return getDb()
+    .select()
+    .from(posts)
+    .where(and(eq(posts.ownerUserId, userId), eq(posts.status, "complete")))
+    .orderBy(desc(posts.completedAt))
+    .limit(limit);
+}
+
 export const findPost = cache(async (id: string) => {
   await ensureDatabase();
   const [record] = await getDb().select().from(posts).where(eq(posts.id, id)).limit(1);
