@@ -116,7 +116,7 @@ export function ShareGate({ postId, gated, signedIn, claimIntent, shareText }: P
         onClick={() => void logEvent(postId, "linkedin")}
       >Post to LinkedIn</a>
       <a
-        href={`/api/posts/${postId}/card.png`}
+        href={`/api/posts/${postId}/card`}
         onClick={() => void logEvent(postId, "png")}
       >Download the card</a>
     </div>

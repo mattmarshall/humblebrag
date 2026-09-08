@@ -247,7 +247,7 @@ people visit twice a year — a reason to be shared at all.
 | `components/ShareGate.tsx` *(new, replaces `ShareLink.tsx`)* | Signed in → copy / PNG / X / LinkedIn / embed. Signed out → one button to `/sign-in?returnTo=/p/[id]%3Fclaim%3D1`, plus the gate copy from §9 |
 | `app/p/[id]/page.tsx` | Stays public. Adds the byline when claimed, `<ShareGate>`, and the "antidote" CTA block. On `?claim=1` with a session, auto-POSTs the claim |
 | `app/p/[id]/opengraph-image.tsx` *(new)* | Public `ImageResponse`: the card plus `humblebrag.com · the real version lives at resumarsh.com`. Public on purpose — crawlers have no cookies |
-| `app/api/posts/[id]/card.png/route.ts` *(new)* | Same renderer, `content-disposition: attachment`, **session required** |
+| `app/api/posts/[id]/card/route.ts` *(new)* | Same renderer, `content-disposition: attachment`, **session required** |
 | `app/me/page.tsx` *(new)* | The brag shelf. Signed-in only; the retention hook and the second CTA placement |
 | `components/PlugFooter.tsx` *(new)* | One line on `/`, `/p/*` and inside `/embed`: *"humblebrag makes the fake one. [resumarsh](https://resumarsh.com) makes the real one."* The embed placement is free distribution on other people's sites |
 | `components/Generator.tsx` | **Unchanged.** A completed generation already pushes to `/p/<id>` (`:365`), which is now the page carrying the gate, the byline and the antidote CTA — a second bespoke CTA card in the generator would duplicate it |
