@@ -1,9 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "app/api/queues/generate-images/route.ts": { "maxDuration": 300 }
-  },
   "crons": [
-    { "path": "/api/queues/generate-images", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/reconcile", "schedule": "0 3 * * *" }
   ]
 }

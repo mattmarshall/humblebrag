@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { cache } from "react";
 import type { Humblebrag, RosterPerson } from "../components/HumblebragCard";
 import { getDb } from "./db";
@@ -6,6 +6,19 @@ import { ensureDatabase } from "./db/ensure";
 import { postPeople, posts, type StoredPerson, type StoredPost } from "./db/schema";
 
 type StoredPostWithPeople = StoredPost & { people?: StoredPerson[] };
+
+/**
+ * The predicate for "this post may appear in a public listing".
+ *
+ * Defined once because it is duplicated nowhere: the gallery API and the
+ * gallery page both use it. `sensitive` marks a post whose images were only
+ * produced because the requester accepted a borderline result — those keep
+ * their permalink but stay unlisted and noindexed, so listing them anywhere
+ * would undo the consent gate.
+ */
+export function publiclyListable(): SQL | undefined {
+  return and(eq(posts.status, "complete"), eq(posts.sensitive, false));
+}
 
 export function hydratePost(record: StoredPostWithPeople) {
   const payload = record.payload as unknown as Omit<Humblebrag, "commentsPreview" | "roster"> & {
@@ -80,14 +93,14 @@ async function findHomepagePostForNetwork(network: "workit" | "influenzr") {
   const configuredId = process.env[`DEFAULT_${network.toUpperCase()}_POST_ID`]?.trim();
   if (configuredId) {
     const configured = await findPost(configuredId);
-    if (configured?.status === "complete" && configured.network === network) return configured;
+    if (configured?.status === "complete" && configured.network === network && !configured.sensitive) return configured;
     console.warn("[humblebrag:homepage-post] configured post unavailable", { network, configuredId });
   }
 
   const [latest] = await getDb()
     .select()
     .from(posts)
-    .where(and(eq(posts.status, "complete"), eq(posts.network, network)))
+    .where(and(eq(posts.status, "complete"), eq(posts.network, network), eq(posts.sensitive, false)))
     .orderBy(desc(posts.completedAt))
     .limit(1);
   if (!latest) return undefined;

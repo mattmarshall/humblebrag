@@ -1,11 +1,9 @@
 import { eq } from "drizzle-orm";
-import { waitUntil } from "@vercel/functions";
 import { z } from "zod";
 import { getDb } from "../../../../lib/db";
 import { postPeople, posts } from "../../../../lib/db/schema";
 import { findPost, hydratePost } from "../../../../lib/posts";
 import { ensureDatabase } from "../../../../lib/db/ensure";
-import { runImageJob } from "../../queues/generate-images/route";
 
 export const runtime = "nodejs";
 
@@ -18,7 +16,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const record = await findPost(id);
   if (!record) return Response.json({ error: "Post not found" }, { status: 404 });
-  if (record.status === "pending" && record.imageNextAttemptAt <= new Date()) waitUntil(runImageJob(id));
   return Response.json({ id: record.id, status: record.status, error: record.error, post: hydratePost(record) });
 }
 

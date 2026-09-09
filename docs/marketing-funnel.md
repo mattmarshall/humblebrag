@@ -91,6 +91,11 @@ and the funnel has no input.
 - `opengraph-image` for those permalinks — must render for LinkedIn's, X's and
   Slack's unauthenticated crawlers, or shares look broken
 - `/embed` and `embed.js` — third-party sites are paid distribution; never gate them
+- **`/gallery`** — the public archive `main` added. It is a browse surface for
+  people who arrived from someone else's share, so it is squarely on the
+  audience side of the line and stays open. Its listing already excludes
+  incomplete and sensitive posts (`publiclyListable()` in `lib/posts.ts`);
+  claim state deliberately does not affect it — a claimed brag stays listed.
 - **The embed snippet in the generator.** An earlier draft of this document
   listed it as a gated creator artifact, which contradicted the line above: the
   snippet is a generic loader keyed on network, persona and prompt, it contains
@@ -297,15 +302,20 @@ loss goes from 4.5% to most of the traffic.
 
 ## 8. One real cost to plan around
 
-Every generation runs an eve agent plus four Bedrock Stable Image Ultra calls
-(`app/api/queues/generate-images/route.ts`), all for anonymous users. A funnel that
-succeeds at bringing traffic will raise that bill quickly, and abuse is unmetered
-today.
+Every generation runs an eve agent plus a batch of GPU renders on RunPod
+(`lib/image-jobs.ts`, `app/api/webhooks/runpod/route.ts`), all for anonymous
+users. A funnel that succeeds at bringing traffic will raise that bill quickly.
 
-Do this *with* the gate, not after: rate-limit anonymous generation per IP (3–5 a
-day is generous for the hook) and let a signed-in account raise the limit. That
-turns cost control into a second, positive reason to log in — "sign in for more
-brags" reads as a perk, not a wall.
+**Half of this is already solved.** An earlier draft of this document argued for
+rate-limiting anonymous generation as though nothing existed; `main` has since
+added exactly that — `lib/rate-limit.ts`, counted in Postgres because serverless
+instances share no memory, currently five creates per address per hour on
+`/api/posts`.
+
+What remains is the half that belongs to the funnel: **let a signed-in account
+raise the limit.** That turns a cost control into a second, positive reason to
+log in — "sign in for more brags" reads as a perk rather than a wall, and it is
+the one place where the gate makes the product more generous instead of less.
 
 ---
 
@@ -365,7 +375,7 @@ card shipped with Phase 2; what remains is the resumarsh end of the deep link �
 cookie. **The privacy note must be updated before the gate is switched on.**
 
 **Phase 5 — the loop (ongoing).** Reverse-funnel button in `/admin`, the
-split-screen card, rate limits as a sign-in perk.
+split-screen card, and raising the existing rate limit for signed-in users.
 
 **Kill criteria.** Abandon the gate if generations-per-share drops more than 20%
 against the holdout, or if gate → sign-in lands under 20%. Either means the wall is

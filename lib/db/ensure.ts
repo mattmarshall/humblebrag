@@ -27,9 +27,21 @@ export function ensureDatabase() {
     `);
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_attempts" integer DEFAULT 0 NOT NULL`);
     await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "image_next_attempt_at" timestamp with time zone DEFAULT now() NOT NULL`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "runpod_job_id" text`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "allow_sensitive" boolean DEFAULT false NOT NULL`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "sensitive" boolean DEFAULT false NOT NULL`);
+    // Claimable posts. Nullable and additive: every post created before the
+    // funnel existed stays valid and simply has no owner.
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "owner_user_id" text`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "owner_handle" text`);
+    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "claimed_at" timestamp with time zone`);
     await getDb().execute(sql`
       CREATE INDEX IF NOT EXISTS "posts_status_created_at_idx"
       ON "posts" USING btree ("status", "created_at")
+    `);
+    await getDb().execute(sql`
+      CREATE INDEX IF NOT EXISTS "posts_owner_user_id_idx"
+      ON "posts" USING btree ("owner_user_id", "created_at")
     `);
     await getDb().execute(sql`
       CREATE TABLE IF NOT EXISTS "post_people" (
@@ -48,17 +60,11 @@ export function ensureDatabase() {
       )
     `);
     await getDb().execute(sql`
-      CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
-      ON "post_people" USING btree ("post_id", "position")
-    `);
-    // Claimable posts. Nullable and additive: every post created before the
-    // funnel existed stays valid and simply has no owner.
-    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "owner_user_id" text`);
-    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "owner_handle" text`);
-    await getDb().execute(sql`ALTER TABLE "posts" ADD COLUMN IF NOT EXISTS "claimed_at" timestamp with time zone`);
-    await getDb().execute(sql`
-      CREATE INDEX IF NOT EXISTS "posts_owner_user_id_idx"
-      ON "posts" USING btree ("owner_user_id", "created_at")
+      CREATE TABLE IF NOT EXISTS "rate_limits" (
+        "key" text PRIMARY KEY NOT NULL,
+        "window_start" timestamp with time zone DEFAULT now() NOT NULL,
+        "count" integer DEFAULT 0 NOT NULL
+      )
     `);
     await getDb().execute(sql`
       CREATE TABLE IF NOT EXISTS "share_events" (
@@ -80,15 +86,8 @@ export function ensureDatabase() {
       ON "share_events" USING btree ("kind", "created_at")
     `);
     await getDb().execute(sql`
-      CREATE TABLE IF NOT EXISTS "image_generation_lock" (
-        "id" text PRIMARY KEY NOT NULL,
-        "holder" text,
-        "expires_at" timestamp with time zone DEFAULT now() NOT NULL
-      )
-    `);
-    await getDb().execute(sql`
-      INSERT INTO "image_generation_lock" ("id") VALUES ('global')
-      ON CONFLICT ("id") DO NOTHING
+      CREATE INDEX IF NOT EXISTS "post_people_post_position_idx"
+      ON "post_people" USING btree ("post_id", "position")
     `);
   })();
   return ready;

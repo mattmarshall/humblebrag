@@ -15,6 +15,10 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   // fallback card on every share.
   const { id } = await params;
   const record = await findPost(id);
+  // A sensitive post keeps its card but loses the scene: main suppressed the
+  // og:image for these entirely, and dropping just the imagery preserves that
+  // intent while still letting the creator share the link.
+  if (record?.sensitive) return renderCard({ ...record, postImageUrl: null });
   if (!record) {
     return renderCard({
       network: "workit",

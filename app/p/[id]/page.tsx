@@ -21,7 +21,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${post.name} is deeply humbled · humblebrag`,
     description: post.body.slice(0, 155),
-    // og:image comes from ./opengraph-image.tsx — one source, and it carries the plug.
+    // A post whose images were only generated because the requester accepted a
+    // borderline result keeps its permalink, but stays out of search results.
+    robots: record.sensitive ? { index: false, follow: false } : undefined,
+    // og:image now comes from ./opengraph-image.tsx — one source, and it carries
+    // the plug. It suppresses the scene for a sensitive post itself, which is
+    // how the "out of link previews" half of the rule above survives the move.
   };
 }
 

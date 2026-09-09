@@ -1,0 +1,29 @@
+# Vercel's Hobby plan caps cron at once per day, which would leave a post
+# stranded for up to 24h if its completion webhook were ever lost. RunPod
+# retries internally, so this is a safety net rather than the drain — but a
+# daily one is too coarse to be useful.
+name: reconcile
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sweep stranded image jobs
+        run: |
+          code=$(curl -s -o /tmp/out.json -w '%{http_code}' \
+            -H "authorization: Bearer $CRON_SECRET" \
+            --max-time 120 \
+            "https://humblebrag-hq.vercel.app/api/cron/reconcile")
+          echo "http=$code"
+          cat /tmp/out.json
+          echo
+          # A non-200 here means the sweep is not running; fail loudly rather
+          # than let it rot silently for weeks.
+          test "$code" = "200"
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
