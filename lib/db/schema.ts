@@ -21,8 +21,35 @@ export const posts = pgTable("posts", {
   imageNextAttemptAt: timestamp("image_next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  /** WorkOS user id of whoever claimed this brag — the same id space as resumarsh. */
+  ownerUserId: text("owner_user_id"),
+  /** Their resumarsh handle, once they have one. Stamped by /api/link-handle,
+   *  because humblebrag has no way to look a handle up on its own. */
+  ownerHandle: text("owner_handle"),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
 }, (table) => [
   index("posts_status_created_at_idx").on(table.status, table.createdAt),
+  index("posts_owner_user_id_idx").on(table.ownerUserId, table.createdAt),
+]);
+
+/**
+ * Every outbound move a creator makes, and every time the gate is shown or
+ * converted. This is the funnel: without it the gate is a guess, and the kill
+ * criteria in docs/marketing-funnel.md have nothing to read.
+ */
+export const shareEvents = pgTable("share_events", {
+  id: text("id").primaryKey(),
+  postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  /** link | png | x | linkedin | embed | gate_view | gate_signin | claim */
+  kind: text("kind").notNull(),
+  userId: text("user_id"),
+  /** Which side of the 50/50 this event came from — the comparison is the point. */
+  bucket: text("bucket"),
+  referrer: text("referrer"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("share_events_post_created_at_idx").on(table.postId, table.createdAt),
+  index("share_events_kind_created_at_idx").on(table.kind, table.createdAt),
 ]);
 
 export const postPeople = pgTable("post_people", {
@@ -43,4 +70,5 @@ export const postPeople = pgTable("post_people", {
 ]);
 
 export type StoredPost = typeof posts.$inferSelect;
+export type StoredShareEvent = typeof shareEvents.$inferSelect;
 export type StoredPerson = typeof postPeople.$inferSelect;

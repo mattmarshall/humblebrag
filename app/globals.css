@@ -171,6 +171,7 @@ button{color:inherit}
   .errorActions button:first-child{background:#eceef8;border-color:#eceef8;color:#11141c}
   ::selection{background:color-mix(in srgb,var(--hb-gold) 52%,#181b23);color:#fff}
 }
+
 .sensitiveOptIn{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;font-size:11px;line-height:1.45;color:#6b7080}
 .sensitiveOptIn input{margin-top:1px;flex:none;accent-color:#666fff}
 .galleryGrid{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
@@ -189,3 +190,54 @@ button{color:inherit}
 .galleryBody small{font-size:11px;color:#6b7080;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .galleryBody p{margin:7px 0 0;font-size:12.5px;line-height:1.5;color:#414652;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .galleryEmpty{margin-top:28px;color:#9da2af}
+
+
+/* The resumarsh plug ------------------------------------------------------ */
+.plugFooter{text-align:center;color:var(--hb-ink-muted);font-size:12px;line-height:1.6;margin:26px 0 0}
+.plugFooter a{color:var(--hb-periwinkle);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--hb-periwinkle) 40%,transparent)}
+.plugFooter a:hover{border-bottom-color:var(--hb-periwinkle)}
+.embedShell .plugFooter{margin:14px 0 4px;font-size:11px}
+.permalinkShell .plugFooter{margin:0 0 8px}
+
+/* Claiming and sharing --------------------------------------------------- */
+.shareGate{max-width:340px;border:1px solid rgba(18,19,24,.14);border-radius:20px;padding:18px 20px;background:rgba(255,255,255,.7);backdrop-filter:blur(18px)}
+.shareGateHead{margin:0;font:500 21px/1.2 Georgia,serif;color:var(--hb-navy)}
+.shareGateBody{margin:8px 0 14px;font-size:13.5px;line-height:1.55;color:var(--hb-ink-muted)}
+.shareGateFinePrint{margin:11px 0 0;font-size:11.5px;line-height:1.5;color:var(--hb-ink-muted);opacity:.85}
+.shareGate .copyLinkButton{display:inline-block;text-decoration:none;text-align:center}
+.shareActions{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.shareActionsRow{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:14px;font-size:12.5px}
+.shareActionsRow a{color:var(--hb-ink-muted);text-decoration:none;border-bottom:1px solid transparent}
+.shareActionsRow a:hover{color:var(--hb-periwinkle);border-bottom-color:var(--hb-periwinkle)}
+.permalinkByline{font-size:13px;color:var(--hb-ink-muted);margin:14px 0 0}
+.permalinkByline a{color:var(--hb-periwinkle);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--hb-periwinkle) 40%,transparent)}
+@media(max-width:700px){.shareGate{max-width:none}.shareActions{align-items:stretch}.shareActionsRow{justify-content:space-between}}
+
+/* The antidote ----------------------------------------------------------- */
+.antidote{margin:34px auto 0;max-width:640px;border:1px solid rgba(18,19,24,.14);border-radius:22px;padding:22px 24px;background:rgba(255,255,255,.62);backdrop-filter:blur(18px);text-align:center}
+.antidote h2{font:500 25px/1.15 Georgia,serif;margin:0 0 10px;color:var(--hb-navy)}
+.antidote p{margin:0 0 16px;font-size:14.5px;line-height:1.6;color:var(--hb-ink-muted)}
+.antidote em{color:var(--ink);font-style:italic}
+.antidoteCta{display:inline-block;background:var(--hb-navy);color:var(--hb-paper);border-radius:14px;padding:11px 18px;font-weight:700;font-size:14px;text-decoration:none}
+.antidoteCta:hover{background:var(--hb-periwinkle)}
+.antidoteTime{display:block;margin-top:10px;font-size:11.5px;color:var(--hb-ink-muted)}
+@media(prefers-color-scheme:dark){.antidoteCta{background:var(--hb-periwinkle);color:#0d0f16}}
+
+/* The brag shelf --------------------------------------------------------- */
+.shelfEmpty{padding:70px 0 40px;max-width:640px}
+.shelfEmpty h1,.shelfHead h1{font:500 clamp(42px,6vw,72px)/.95 Georgia,serif;letter-spacing:-.05em;margin:13px 0 0}
+.shelfEmpty h1 em,.shelfHead h1 em{color:var(--hb-periwinkle);font-weight:500}
+.shelfEmpty p{font-size:16px;color:var(--hb-ink-muted);margin:16px 0 22px}
+.shelfEmpty .copyLinkButton{display:inline-block;text-decoration:none}
+.shelf{padding:60px 0 30px}
+.shelfCount{font-size:14px;color:var(--hb-ink-muted);margin:16px 0 0}
+.shelfList{list-style:none;padding:0;margin:32px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.shelfList a{display:flex;flex-direction:column;gap:7px;height:100%;padding:18px;border:1px solid rgba(18,19,24,.13);border-radius:18px;background:rgba(255,255,255,.62);text-decoration:none;color:inherit;transition:transform .15s ease,border-color .15s ease}
+.shelfList a:hover{transform:translateY(-2px);border-color:var(--hb-periwinkle)}
+.shelfNetwork{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--hb-ink-muted)}
+.shelfName{font:500 19px/1.25 Georgia,serif}
+.shelfPremise{font-size:12.5px;line-height:1.5;color:var(--hb-ink-muted)}
+
+.navAsideLinks{display:flex;gap:16px}
+.navAsideLinks a{color:inherit;text-decoration:none}
+.navAsideLinks a:hover{color:var(--hb-periwinkle)}

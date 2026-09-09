@@ -43,6 +43,38 @@ Post and roster creation is transactional. Image requests must match the persist
 
 Schema changes live in `drizzle/`. Apply them with `npm run db:migrate` after providing `DATABASE_URL` in the process environment.
 
+## Accounts, claiming, and the resumarsh funnel
+
+humblebrag is usable signed out: generating a brag, reading any `/p/[id]`
+permalink, and embedding the generator all work with no account, and always
+will. Signing in does one thing — it lets the person who *made* a brag claim it,
+which puts their name on it, unlocks the downloadable card, and keeps it on
+their shelf at `/me`.
+
+Identity is WorkOS AuthKit pointed at **the same WorkOS environment as
+[resumarsh](https://resumarsh.com)**, so an account made here is a resumarsh
+account. The hosted login screen is branded per environment and will therefore
+say resumarsh; that is deliberate. See [`docs/marketing-funnel.md`](docs/marketing-funnel.md).
+
+```bash
+WORKOS_API_KEY=sk_...
+WORKOS_CLIENT_ID=client_...
+WORKOS_COOKIE_PASSWORD=...          # 32+ characters
+NEXT_PUBLIC_WORKOS_REDIRECT_URI=https://<host>/callback   # register this on the WorkOS environment
+
+HUMBLEBRAG_GATE=off                 # off | experiment | on — see below
+RESUMARSH_LINK_SECRET=...           # shared with resumarsh, for /api/link-handle
+```
+
+`HUMBLEBRAG_GATE` decides whether sharing asks for a sign-in first: `off`
+(default) gates nobody, `experiment` runs the 50/50 split the funnel numbers
+come from, `on` gates everyone. Rolling the gate back is this variable, not a
+revert — claiming and bylines keep working in every mode.
+
+`/api/link-handle` is how resumarsh tells us someone's handle once they claim
+one; humblebrag has no way to look one up. Without `RESUMARSH_LINK_SECRET` the
+endpoint refuses every call and bylines simply stay unlinked.
+
 ## Development
 
 Node.js 24 or newer is required.
